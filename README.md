@@ -11,4 +11,5 @@ Space plasma physics data analysis tools developed by Chi Zhang.
 ## Installation
 
 ```bash
-pip install git+https://github.com/yourusername/py_space_zc.git
+
+pip install git+https://github.com/ChiZhang123456/py_space_zc.git

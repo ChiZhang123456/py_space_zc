@@ -24,14 +24,26 @@ def db_init(local_data_dir):
     # Path to the configuration file.
     pkg_path = os.path.dirname(os.path.abspath(__file__))
 
-    # Read the current version of the configuration
-    with open(os.path.join(pkg_path, "config.json"), "r", encoding="utf-8") as fs:
-        config = json.load(fs)
+    # If config.json exists, read it; otherwise, create a default one
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as fs:
+            try:
+                config = json.load(fs)
+            except json.JSONDecodeError:
+                print("⚠️ config.json is corrupted or empty, recreating a new one.")
+                config = {}
+    else:
+        print("⚠️ config.json not found, creating a new one.")
+        config = {}
 
-    # Overwrite the configuration file with the new path
-    with open(os.path.join(pkg_path, "config.json"), "w", encoding="utf-8") as fs:
-        config["local_data_dir"] = local_data_dir
-        json.dump(config, fs)
+    # Update the local data directory path
+    config["local_data_dir"] = local_data_dir
+
+    # Write back to config.json with pretty formatting
+    with open(config_path, "w", encoding="utf-8") as fs:
+        json.dump(config, fs, indent=4)
+        print(f"✅ Updated config.json -> local_data_dir = {local_data_dir}")
 
 if __name__ == "__main__":
     db_init("F:\\data\\maven\\data\\sci")
+    db_init("/pscratch/sd/c/chizhang/data/maven/data/sci")

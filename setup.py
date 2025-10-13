@@ -25,6 +25,5 @@ setup(
                       "pyrfu",
                       'pyshtools',
                       'pyvlasiator',
-                      'pymagglobal @ https://public:5mz_iyigu-WE3HySBH1J@git.gfz-potsdam.de/api/v4/projects/1055/packages/pypi/files/pymagglobal-0.1.0.tar.gz',
                       "xarray",],
 )

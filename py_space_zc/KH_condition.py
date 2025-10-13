@@ -70,8 +70,8 @@ def KH_condition(rho1, rho2, v1, v2, k, B1, B2):
     B2_par = dot(B2_si, k)   # (B2 · k_hat)
 
     # --- KH driving vs. magnetic suppression ---
-    inertia_term  = (rho1_si * rho2_si) / (rho1_si + rho2_si) * (dV_par ** 2)
-    magnetic_term = (B1_par ** 2 + B2_par ** 2) / mu0
+    inertia_term  = (rho1_si * rho2_si) / (rho1_si + rho2_si) **2 * (dV_par ** 2)
+    magnetic_term = (B1_par ** 2 + B2_par ** 2) / mu0/ (rho1_si * rho2_si)
 
     argument = inertia_term - magnetic_term
 

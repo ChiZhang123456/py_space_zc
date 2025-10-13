@@ -2,27 +2,27 @@
 # -*- coding: utf-8 -*-
 
 import json
-
-# Built-in imports
 import os
 
 
 def db_init(local_data_dir):
-    r"""Setup the default path of MAVEN data.
+    """
+    Setup or update the default path of MAVEN data.
 
     Parameters
     ----------
     local_data_dir : str
-        Path to the data.
-
+        Path to the data directory.
     """
 
-    # Normalize the path and make sure that it exists
+    # Normalize and verify the provided data directory
     local_data_dir = os.path.normpath(local_data_dir)
-    assert os.path.exists(local_data_dir), f"{local_data_dir} doesn't exists!!"
+    if not os.path.exists(local_data_dir):
+        raise FileNotFoundError(f"❌ The specified path does not exist: {local_data_dir}")
 
-    # Path to the configuration file.
+    # Locate the configuration file path
     pkg_path = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(pkg_path, "config.json")
 
     # If config.json exists, read it; otherwise, create a default one
     if os.path.exists(config_path):
@@ -44,6 +44,8 @@ def db_init(local_data_dir):
         json.dump(config, fs, indent=4)
         print(f"✅ Updated config.json -> local_data_dir = {local_data_dir}")
 
+
 if __name__ == "__main__":
+    # Example usage: add multiple default paths if needed
     db_init("F:\\data\\maven\\data\\sci")
     db_init("/pscratch/sd/c/chizhang/data/maven/data/sci")

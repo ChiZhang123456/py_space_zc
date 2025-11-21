@@ -65,7 +65,8 @@ from .plot_Bwave_svd import plot_Bwave_svd
 from .pressure import pressure
 from .gyro_information import gyro_information
 from .rotate_tensor import rotate_tensor
-
+from .xyz_2_lonlat import xyz_2_lonlat
+from .lonlat_2_xyz import lonlat_2_xyz
 # -----------------------------------------------------------------------------
 # Submodules
 # -----------------------------------------------------------------------------
@@ -114,7 +115,7 @@ __all__ = [
     # Physics methods
     "pad_split_energy", "KH_condition", "plot_Bwave_svd",
 
-    'pressure', 'gyro_information', 'rotate_tensor',
+    'pressure', 'gyro_information', 'rotate_tensor', "xyz_2_lonlat","lonlat_2_xyz",
 
     # Submodules
     "maven", "emm", "vdf", "mercury", "vlasitor", "ionization",

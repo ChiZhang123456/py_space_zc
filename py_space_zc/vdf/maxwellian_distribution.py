@@ -1,5 +1,5 @@
 import numpy as np
-from .get_particle_mass_charge import get_particle_mass_charge
+from py_space_zc.vdf import get_particle_mass_charge
 
 def _1d(n, T, U, v, species):
     """
@@ -139,9 +139,9 @@ if __name__ == "__main__":
     # import matplotlib.pyplot as plt
 
     n = 10  # cm^-3
-    T = 10  # eV
+    T = 52.198  # eV
     u = [-400, 0, 0]  # km/s
-    Vx = 100
+    Vx = -400
     Vy = 0
     Vz = 0
     # Vx = np.arange(-400, 400, 1)

@@ -44,6 +44,7 @@ from .Monte_Carlo_vdf import _mc_pol_1d as mc_1d
 # === Calculate the pitch angle distribution ===
 from .pitchangle_dis import pitchangle_dis
 from .pitchangle_merge_energy import pitchangle_merge_energy
+from .pitchangle_merge_pa import pitchangle_merge_pa
 from .pitchangle_dis_3d import pitchangle_dis_3d
 from .monte_carlo_pad import par_perp_reduced_dis as par_perp_reduced_dis
 
@@ -80,6 +81,7 @@ __all__ = [
     # pitch angle distribution
     "pitchangle_dis",
     "pitchangle_merge_energy",
+    "pitchangle_merge_pa",
     "pitchangle_dis_3d",
     "par_perp_reduced_dis",
 ]

@@ -25,7 +25,7 @@ def cf_model(alt_km, lat_deg, lon_deg):
     Parameters
     ----------
     alt_km : array-like
-        Altitude in km above Mars reference radius (3393.5 km).
+        Altitude in km above Mars reference radius (3390 km).
     lat_deg : array-like
         Latitude in degrees.
     lon_deg : array-like

@@ -75,4 +75,5 @@ def plot_line(axis, inp, **kwargs):
     axis.yaxis.set_major_locator(mticker.MaxNLocator(4))
     
     axis.set_xlim(np.datetime64(inp.time.data[0]),np.datetime64(inp.time.data[-1]))
+    axis.tick_params(axis='both',direction='in')
     return axis

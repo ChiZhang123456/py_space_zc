@@ -66,7 +66,7 @@ def show_maven_tianwen_data(tint):
     )
 
     # STATIC C6: H
-    ax_h, cax_h = maven.plot_sta_c6(ax_right[0], tint, "H", correct_background=False)
+    ax_h, cax_h = maven.plot_sta_c6(ax_right[0], tint, "H", correct_background=True)
     pos = ax_h.get_position()
     cax_h.set_position([pos.x1 + 0.005, pos.y0 + 0.01, 0.01, pos.height - 0.02])
     ax_h.set_xlabel('')
@@ -77,14 +77,14 @@ def show_maven_tianwen_data(tint):
     
 
     # STATIC C6: O
-    ax_o, cax_o = maven.plot_sta_c6(ax_right[1], tint, "O", correct_background=False)
+    ax_o, cax_o = maven.plot_sta_c6(ax_right[1], tint, "O", correct_background=True)
     pos = ax_o.get_position()
     cax_o.set_position([pos.x1 + 0.005, pos.y0 + 0.01, 0.01, pos.height - 0.02])
     ax_o.set_xlabel('')
     ax_o.set_ylim(5, 30000)
 
     # STATIC C6: O2 (with background correction)
-    ax_o2, cax_o2 = maven.plot_sta_c6(ax_right[2], tint, "O2", correct_background=False)
+    ax_o2, cax_o2 = maven.plot_sta_c6(ax_right[2], tint, "O2", correct_background=True)
     pos = ax_o2.get_position()
     cax_o2.set_position([pos.x1 + 0.005, pos.y0 + 0.01, 0.01, pos.height - 0.02])
     ax_o2.set_xlabel('')

@@ -128,6 +128,7 @@ def plot_spectr(
     min_ydata = np.floor(np.nanmin(y_data.data)).astype(np.float32)+0.1
     max_ydata = np.ceil(np.nanmax(y_data.data)).astype(np.float32)
     axis.set_ylim(min_ydata, max_ydata)
+    axis.tick_params(axis='both', direction='in')
 
     # Plot colorbar
     if colorbar.lower() == "right":

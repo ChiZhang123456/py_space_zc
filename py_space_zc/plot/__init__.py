@@ -27,7 +27,9 @@ from .add_colorbar import add_colorbar
 from .plot_pcolor import plot_pcolor
 from .plot_pcolor_quiver import plot_pcolor_quiver
 from .adjust_colorbar import adjust_colorbar
-
+from .set_xtick import set_xtick
+from .hist2d import hist2d
+from .hist1d import hist1d
 
 __all__ = [
     "plot_line",
@@ -49,4 +51,7 @@ __all__ = [
     "plot_pcolor",
     "plot_pcolor_quiver",
     "add_colorbar",
+    "set_xtick",
+    "hist2d",
+    "hist1d",
 ]

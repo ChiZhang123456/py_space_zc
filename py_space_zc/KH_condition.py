@@ -24,8 +24,8 @@ def KH_condition(rho1, rho2, v1, v2, k, B1, B2):
     -------
     argument : float or ndarray
         Value of the KH instability criterion in SI units:
-            argument = (rho1*rho2 / (rho1+rho2)) * (ΔV·k_hat)^2
-                       - ((B1·k_hat)^2 + (B2·k_hat)^2) / mu0
+            argument = (rho1*rho2 / (rho1+rho2)^2) * (ΔV·k_hat)^2
+                       - ((B1·k_hat)^2 + (B2·k_hat)^2) / mu0 / (rho1+rho2)
         If argument > 0, the KH instability can grow.
         If argument < 0, the instability is suppressed by magnetic tension.
     gamma : float or ndarray, optional
@@ -70,9 +70,8 @@ def KH_condition(rho1, rho2, v1, v2, k, B1, B2):
     B2_par = dot(B2_si, k)   # (B2 · k_hat)
 
     # --- KH driving vs. magnetic suppression ---
-    inertia_term  = (rho1_si * rho2_si) / (rho1_si + rho2_si) * (dV_par ** 2)
-    magnetic_term = (B1_par ** 2 + B2_par ** 2) / mu0
-
+    inertia_term  = (rho1_si * rho2_si) / (rho1_si + rho2_si) **2 * (dV_par ** 2)
+    magnetic_term = (B1_par ** 2 + B2_par ** 2) / mu0/ (rho1_si * rho2_si)
     argument = inertia_term - magnetic_term
 
     return argument

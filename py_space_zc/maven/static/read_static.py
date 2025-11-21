@@ -8,6 +8,7 @@ It supports three STATIC modes:
 
     - read_c0: For C0 mode (64 energy bins × 2 mass bins)
     - read_c6: For C6 mode (32 energy bins × 64 mass bins)
+    - read_c8: For C8 mode (32 energy bins × 16 direction bins, assume all ions are O2+)
     - read_d1: For D1 mode (32 energy bins × 16 phi x 4 theta × 8 masses)
 """
 
@@ -205,6 +206,7 @@ def read_c6(filename_c6):
     return res
 
 
+
 #%% STATIC C6 iv4 mode reader
 def read_c6_iv4(filename_c6_iv4: str) -> dict:
     """
@@ -283,6 +285,75 @@ def read_c6_iv4(filename_c6_iv4: str) -> dict:
     except Exception as e:
         print(f"[read_c6_iv4] Warning: failed to read '{filename_c6_iv4}': {e}")
 
+    return res
+
+
+# %% STATIC C6 mode reader
+def read_c8(filename_c8):
+    """
+    Read and process MAVEN STATIC C8 data from a CDF file. C8 assume that all ions are O2+
+
+    Parameters
+    ----------
+    filename : str
+        Full path to the CDF file.
+
+    Returns
+    -------
+    res : dict
+        Dictionary with the following fields:
+        - time       [num_time]                           : Time array
+        - energy     [num_time, num_energy]               : Energy table
+        - DEF        [num_time, num_energy, num_direction]     : Differential energy flux
+        - count      [num_time, num_energy, num_direction]     : Raw counts
+        - scpot      [num_time]                           : Spacecraft potential
+        - dead       [num_time, num_energy, num_direction]     : Dead time correction
+    """
+    nenergy = 32
+    n_direction = 16
+
+    res = {
+        'time': np.array([], dtype='datetime64[ns]'),
+        'energy': np.array([], dtype=float),
+        'DEF': np.array([], dtype=float).reshape(0, nenergy, n_direction),
+        'count': np.array([], dtype=float).reshape(0, nenergy, n_direction),
+        'scpot': np.array([], dtype=float),
+        'dead': np.array([], dtype=float),
+    }
+
+    if not os.path.isfile(filename_c8):
+        print(f"File not found: {filename_c8}")
+        return res
+
+    try:
+        # Read CDF variables
+        val_names = ['epoch', 'energy', 'sc_pot', 'eflux', 'data', 'swp_ind', 'dead']
+        is_time = [1] + [0] * (len(val_names) - 1)
+
+        time, energy, scpot, DEF, count, \
+            swp_ind, dead = get_cdf_var(cdf_filename=filename_c8,
+                                        variable_name=val_names,
+                                        istime=is_time)
+        swp_ind = swp_ind.astype(int)
+        DEF = np.transpose(DEF, [0, 2, 1])  # [ntime, 32, 64]
+        count = np.transpose(count, [0, 2, 1])
+        dead = np.transpose(dead, [0, 2, 1])
+        energy = np.squeeze(energy[0, :, :])  # [32, nswp]
+        temp_energy = np.zeros((len(time), nenergy))
+
+        for i in range(len(time)):
+            swp_idx = swp_ind[i]
+            temp_energy[i, :] = energy[:, swp_idx]
+
+        # Store results (flipped energy axis)
+        res['time'] = time
+        res['energy'] = np.flip(temp_energy, 1)
+        res['DEF'] = np.flip(DEF, 1)
+        res['count'] = np.flip(count, 1)
+        res['dead'] = np.flip(dead, 1)
+        res['scpot'] = scpot
+    except Exception as e:
+        print(f"Warning: Failed to read {filename_c8}. Reason: {e}")
     return res
 
 
@@ -560,7 +631,8 @@ if __name__ == "__main__":
 
     # filename_c6_iv4 = "F:\\data\\maven\\data\\sci\\sta\\iv4\\2018\\04\\mvn_sta_l2_c6-32e64m_20180401_iv4.cdf"
     # data = read_c6_iv4(filename_c6_iv4)
-    filename_d1_iv4 = 'F:\\data\\maven\\data\\sci\\sta\\iv4\\2018\\07\\mvn_sta_l2_d1-32e4d16a8m_20180718_iv4.cdf'
-    data = read_d1_iv4(filename_d1_iv4)
-
+    # filename_d1_iv4 = 'F:\\data\\maven\\data\\sci\\sta\\iv4\\2018\\07\\mvn_sta_l2_d1-32e4d16a8m_20180718_iv4.cdf'
+    # data = read_d1_iv4(filename_d1_iv4)
+    filename_c8 = r'F:\data\maven\data\sci\sta\l2\2021\12\mvn_sta_l2_c8-32e16d_20211228_v02.cdf'
+    data = read_c8(filename_c8)
  

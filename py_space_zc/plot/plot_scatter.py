@@ -84,5 +84,6 @@ def plot_scatter(axis, inp, **kwargs):
     axis.grid(True, which="major", linestyle="-", linewidth="0.2", c="0.5")
     axis.yaxis.set_major_locator(mticker.MaxNLocator(4))
     axis.set_xlim(np.datetime64(inp.time.data[0]),np.datetime64(inp.time.data[-1]))
+    axis.tick_params(axis='both', direction='in')
 
     return axis

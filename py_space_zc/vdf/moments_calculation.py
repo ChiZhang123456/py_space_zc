@@ -2,7 +2,6 @@
 Adapted from pyrfu's ts_skymap module:
 (https://github.com/louis-richard/irfu-python), licensed under the MIT License.
 
-Original code licensed under the MIT License.
 Modified by Chi Zhang for compatibility with py_space_zc and to include
 spacecraft velocity correction in the velocity moments calculation.
 """

@@ -12,6 +12,7 @@ Functions include:
 - `plot_swia_vpar_perp`: Visualize SWIA ion VDF in Vpara-Vperp coordinates.
 - `plot_sta_c6`: Plot STATIC C6 omnidirectional differential energy flux for selected species.
 - `plot_sta_dens`: Display STATIC density time series for H⁺, O⁺, O₂⁺.
+- `plot_d1_reduced_1d`: 1D velocity distribution reduction for STATIC D1 data.
 - `plot_d1_reduced_2d`: 2D velocity distribution reduction for STATIC D1 data.
 - `plot_d1_flux`: Compute and show STATIC ion flux time series.
 - `plot_swea_omni`: SWEA omnidirectional electron spectra.
@@ -373,6 +374,7 @@ def plot_sta_c6(ax, tint, species, clim=None, cmap = 'Spectral_r',correct_backgr
     ax.set_ylabel(r"$\mathrm{STATIC}$" "\n" r"$E_i$ [eV]")
     ax.set_xlabel("Time")
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    ax.set_yticks([1e1, 1e2, 1e3, 1e4])
     cax.set_ylabel(r"DEF" "\n" r"[keV/(cm$^2$ s sr keV)]")
 
     # --- Corner label box ---
@@ -382,6 +384,35 @@ def plot_sta_c6(ax, tint, species, clim=None, cmap = 'Spectral_r',correct_backgr
             ha='right', va='top', fontsize=12, bbox=bbox_props)
     plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)
     return ax, cax
+
+
+#%% Show the STATIC c8 deflection map
+def plot_sta_c8(ax, tint, energyrange = [0.0, 10000.0],cmap='Spectral_r'):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+    tint_new = pyrf.extend_tint(tint, [-16.0, 16.0])
+    sta_c8 = maven.get_data(tint_new, 'static_c8')
+    # Merge over energy range to get PAD(time, pitchangle)
+    energymat = np.tile(sta_c8['energy'][:, :, None], (1, 1, 16))
+    mask = (energymat >= energyrange[0]) & (energymat <= energyrange[1])
+    data = np.nansum(np.where(mask, sta_c8['DEF'], np.nan), axis=1)
+    dangle = np.linspace(-42.0, 42.0, num=16)
+    data = ts_spectr(sta_c8['time'], dangle, data, comp_name = "theta" )
+    ax, cax = plot_spectr(ax, data, cscale="log", cmap=cmap, edgecolor="k", linewidth=0.5)
+    cax.set_ylabel("DEF\n[keV/(cm$^2$·s·sr·keV)]")
+    plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.015)
+    ax.set_ylim(-90.0, 90.0)
+    ax.set_yticks([-90.0, -45.0, 0, 45.0, 90.0])
+    ax.set_ylabel(r'Deflection Angles ($^\circ$)')
+    ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    plot.set_axis(ax, fontsize=10, tick_fontsize=12, label_fontsize=13)
+    ax.axhline(y=45, color='black', linestyle='--', linewidth=1)
+    ax.axhline(y=-45, color='black', linestyle='--', linewidth=1)
+    # ax.fill_between([np.datetime64(tint[0]), np.datetime64(tint[1])],
+    #                 -45.0, 45.0, color='grey', alpha=0.2)
+    return ax
+
 
 #%% Show the STATIC density data
 def plot_sta_dens(ax,
@@ -437,7 +468,107 @@ def plot_sta_dens(ax,
         ncol=1)
     return ax
 
+#%% Show the STATIC d1 1d-reduced vdf data
+def plot_d1_reduced_1d(
+    ax: Optional[plt.Axes],
+    d1: dict,
+    mso_axis: Union[np.ndarray, Iterable[float]],
+    species: str,
+    vg: Union[np.ndarray, Iterable[float], None] = None,
+    correct_background: bool = False,
+    correct_vsc: bool = False,
+    *,
+    cmap: str = "Spectral_r",
+    ylabel: str = r"$v_2$ (km/s)",
+    clim: Optional[Tuple[float, float]] = None,
+):
+    """
+    Plot a 1D reduction of MAVEN STATIC D1 ion VDF onto the direction of mso_axis.
 
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes or None
+        If None, a new figure/axes will be created.
+    d1 : dict
+        STATIC D1 dataset with keys like 'time', 'H_DEF'/'O_DEF'/'O2_DEF',
+        'scpot', and 'sta2mso' (used internally by reduced_d1_2d).
+    mso_axis : array-like
+        vectors in MSO coordinates. Shapes can be (3,), (1,3),
+        or (nt,3) aligned with d1['time'].
+    species : str
+        One of {"H","H+","O","O+","O2","O2+"} (case-insensitive).
+    vg : array-like or None
+        1D Cartesian velocity grid for reduction. Provided in km/s (converted to m/s).
+    correct_background : bool, default False
+        If True, apply STATIC D1 background correction.
+    correct_vsc : bool, default False
+        If True, estimate spacecraft velocity in STATIC frame and apply correction.
+    cmap : str, default "Spectral_r"
+        Colormap name.
+    ylabel : str
+        Axis labels (displayed in km/s).
+    clim : (vmin, vmax) or None
+        Color limits passed to the plotting function.
+
+    Returns
+    -------
+    ax, cax : (matplotlib.axes.Axes, matplotlib.axes.Axes)
+        Axes for the image and its colorbar.
+    """
+
+    # 1) Ensure we have an Axes to draw on
+    if ax is None:
+        _, ax = plt.subplots(figsize=(6, 5))
+
+    # 2) Normalize vg_2d units: reducer expects m/s; display uses km/s
+    vg_ms_for_reduce = None
+    xylim_kms = (-500.0, 500.0)  # default display limits in km/s
+    if vg is not None:
+        vg_arr = np.asarray(vg, dtype=float)
+        vg_ms_for_reduce = vg_arr * 1e3
+        xylim_kms = (float(np.nanmin(vg_arr)), float(np.nanmax(vg_arr)))
+
+    # 3) Perform reduction
+    f1d = maven.static.reduced_d1_1d(
+        d1, mso_axis, species, vg = vg_arr,
+        correct_background = correct_background,
+        correct_vsc = correct_vsc
+    )
+
+    # 5) Draw spectrogram
+    ax, pcm, cax = plot.plot_pcolor(ax, f1d.time.data, vg, f1d.data, cscale='log',
+                                     clim=clim, cmap = cmap)
+    cax.remove()
+    cax = plot.add_colorbar(ax, pcm, size_ratio = 0.8, thickness_ratio = 0.015, pad = 0.005 )
+    # 6) Crosshair at v1=0, v2=0 in km/s
+    xmin, xmax = xylim_kms
+    ax.plot([f1d.time.data[0], f1d.time.data[-1]], [0, 0], color="grey", linestyle="--", linewidth=1)
+
+    # 7) Axes limits and labels
+    ax.set_ylim(*xylim_kms)
+    ax.set_xlim(f1d.time.data[0], f1d.time.data[-1])
+    ax.set_ylabel(ylabel)
+    ax.grid(True, color='grey', linewidth=0.2)
+    cax.set_label(r"$\mathrm{s\,m^{-4}}$")
+
+    sp = species.lower()
+    label_map = {
+        "h": "$\\mathrm{H}^+$", "h+": "$\\mathrm{H}^+$", "p": "$\\mathrm{H}^+$",
+        "he": "$\\mathrm{He}^+$", "he+": "$\\mathrm{He}^+$", "he++": "$\\mathrm{He}^+$",
+        "o": "$\\mathrm{O}^+$", "o+": "$\\mathrm{O}^+$",
+        "o2": "$\\mathrm{O}_2^+$", "o2+": "$\\mathrm{O}_2^+$",
+        "co2": "$\\mathrm{CO}_2^+$", "co2+": "$\\mathrm{CO}_2^+$"
+    }
+    if sp not in label_map:
+        raise ValueError(f"Unsupported species: {species}")
+    label = label_map[sp]
+    # Add label
+    bbox_props = dict(boxstyle='round,pad=0.3',
+                      facecolor='black', edgecolor='none',
+                      alpha=0.6)
+    ax.text(0.97, 0.97, label, transform=ax.transAxes, color='white',
+            ha='right', va='top', fontsize=12, bbox=bbox_props)
+    return ax, cax
 
 #%% Show the STATIC d1 2d-reduced vdf data
 
@@ -531,7 +662,7 @@ def plot_d1_reduced_2d(
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.grid(True, color='grey', linewidth=0.2)
-    cax.set_ylabel(r"$\mathrm{s^3\,m^{-6}}$")
+    cax.set_ylabel(r"$\mathrm{s^2\,m^{-5}}$")
 
     # 9) Add title
     t_vals = np.array(f2d_for_plot.time)

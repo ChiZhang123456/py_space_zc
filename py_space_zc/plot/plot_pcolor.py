@@ -10,7 +10,6 @@ def plot_pcolor(
     X_grid: np.ndarray,
     Y_grid: np.ndarray,
     data: np.ndarray,
-    *,
     xscale: Optional[str] = None,           # e.g., "linear", "log"
     yscale: str = "linear",                 # e.g., "linear", "log"
     cscale: str = "linear",                 # "linear" | "log" | "symlog" | "twoslope"
@@ -148,6 +147,7 @@ def plot_pcolor(
         cbar = add_colorbar(ax, pcm, size_ratio = 0.6, )
         if cbar_label:
             cbar.set_label(cbar_label)
+    ax.tick_params(axis='both', direction='in')
 
     return ax, pcm, cbar
 

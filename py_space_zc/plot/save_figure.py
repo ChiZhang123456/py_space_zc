@@ -1,8 +1,18 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.backends.backend_pdf import PdfPages
+
+# --- Global settings to ensure RGB output in PDF ---
+mpl.rcParams['pdf.use14corefonts'] = False
+mpl.rcParams['pdf.fonttype'] = 42   # TrueType -> prevents CMYK issues
+mpl.rcParams['savefig.facecolor'] = 'white'
+mpl.rcParams['savefig.edgecolor'] = 'white'
+
 
 def save_figure(fig, filename, formats=("pdf",), dpi=600, bbox_inches="tight"):
     """
-    Save a matplotlib figure with fixed width in cm, keeping aspect ratio.
+    Save a matplotlib figure with consistent RGB colors for all formats.
+    Ensures PDF is saved in RGB instead of CMYK (important for Illustrator).
 
     Parameters
     ----------
@@ -12,31 +22,33 @@ def save_figure(fig, filename, formats=("pdf",), dpi=600, bbox_inches="tight"):
         Base filename (without extension).
     formats : str or tuple of str, optional
         Output format(s). Example: "jpg" or ("pdf", "jpg").
-        Default is ("pdf",).
-    width_cm : float, optional
-        Desired figure width in centimeters. Default is 16 cm.
     dpi : int, optional
-        Dots per inch (image resolution). Default is 600.
+        Output resolution (default: 600).
     bbox_inches : str, optional
-        Bounding box option passed to `savefig`. Default is "tight".
-
-    Returns
-    -------
-    None
-
-    Examples
-    --------
-    >>> fig, ax = plt.subplots()
-    >>> ax.plot([0,1], [0,1])
-    >>> save_figure(fig, "figure1", formats=("pdf", "jpg"), width_cm=16)
+        Bounding box setting ("tight" by default).
     """
 
     # Ensure formats is iterable
     if isinstance(formats, str):
         formats = (formats,)
 
-    # Save in each format
     for fmt in formats:
         outname = f"{filename}.{fmt}"
-        fig.savefig(outname, format=fmt, dpi=dpi, bbox_inches=bbox_inches)
-        print(f"Saved: {outname}")
+
+        # --- Force RGB PDF (avoid CMYK issue) ---
+        if fmt.lower() == "pdf":
+            with PdfPages(outname) as pdf:
+                pdf.savefig(fig, dpi=dpi, bbox_inches=bbox_inches)
+            print(f"[RGB PDF Saved]: {outname}")
+
+        # --- Normal image formats ---
+        else:
+            fig.savefig(
+                outname,
+                format=fmt,
+                dpi=dpi,
+                bbox_inches=bbox_inches,
+                facecolor=fig.get_facecolor(),
+                edgecolor='none'
+            )
+            print(f"[Saved]: {outname}")

@@ -11,10 +11,11 @@ Version: 2.4.10
 from .mva import mva
 from .mva_gui import mva_gui
 from .SVD_B import SVD_B
-
+from .wavelet import wavelet
 
 __all__ = [
     "mva_gui",
     "mva",
     "SVD_B",
+    "wavelet",
 ]

@@ -69,7 +69,7 @@ from .rotate_tensor import rotate_tensor
 # -----------------------------------------------------------------------------
 # Submodules
 # -----------------------------------------------------------------------------
-from . import maven, emm, vdf, mercury, vlasitor, ionization, tianwen_1, plot, method, jupiter, sputtering
+from . import maven, emm, vdf, mercury, vlasitor, ionization, tianwen_1, plot, method, jupiter, sputtering, vex
 
 # -----------------------------------------------------------------------------
 # Metadata
@@ -118,5 +118,5 @@ __all__ = [
 
     # Submodules
     "maven", "emm", "vdf", "mercury", "vlasitor", "ionization",
-    "tianwen_1", "plot", "method","jupiter", "sputtering",
+    "tianwen_1", "plot", "method", "jupiter", "sputtering", "vex",
 ]

@@ -38,18 +38,20 @@ def get_data(tint, var):
         - 'swia_omni'   : Omnidirectional moments & DEF from SWIA onboard survey mode (.cdf)
         - 'swia_3d'     : 3D distribution function from coarse survey mode (.cdf)
         - 'swia_moment' : Derived ion moments from SWIA coarse 3d data  (.mat from Chi Zhang)
-        
+
         SWEA (Solar Wind Electron Analyzer):
         - 'swea_omni'   : Omnidirectional electron spectra (.cdf)
         - 'swea_pad'    : Electron pitch angle distribution (.cdf)
         - 'swea_topo'   : SWEA top-hat field of view topography (.mat)
+        - 'swea_scpot'  : SWEA-LPW spacecraft potential (.mat)
 
         STATIC (Suprathermal and Thermal Ion Composition):
         - 'static_c0'       : STATIC C0 mode (ion spectra, low energy range) (.cdf)
         - 'static_c6'       : STATIC C6 mode (wider mass range) (.cdf)
-        - 'static_c6_iv4'   : STATIC C6 mode with inverse version 4 processing (.cdf)
+        - 'static_c8'       : STATIC C8 mode (wider direction range) (.cdf)
+        - 'static_c6_iv4'   : STATIC C6 background counts (.cdf)
         - 'static_d1'       : STATIC D1 mode (ion VDF in 3D, high resolution) (.cdf)
-        - 'static_d1_iv4'   : STATIC D1 mode with inverse version 4 processing (.cdf)
+        - 'static_d1_iv4'   : STATIC D1 background counts (.cdf)
         - 'static_density'  : Derived ion density from STATIC (Gwen's txt format)
         - 'static_moment'   : Derived ion moments from STATIC D1 mode (.mat from Chi Zhang)
 
@@ -102,14 +104,20 @@ def get_data(tint, var):
         'swea_pad':{'path': os.path.join(base_path_mvn, 'swe', 'l2'),
                       'filename_format': 'mvn_swe_l2_svypad_{date}_*.cdf'},
 
-        'swea_topo': {'path': os.path.join(base_path_mvn, 'swe', 'l3'),
+        'swea_topo': {'path': os.path.join(base_path_mvn, 'swe', 'l3',),
                      'filename_format': 'topo_{date}.mat'},
+
+        'swea_scpot': {'path': os.path.join(base_path_mvn, 'swe', 'l3','swea_lpw_pot_mat'),
+                      'filename_format': 'swea_scpot_{date}.mat'},
 
         'static_c0':{'path': os.path.join(base_path_mvn, 'sta', 'l2'),
                       'filename_format': 'mvn_sta_l2_c0-64e2m_{date}_*.cdf'},
 
         'static_c6':{'path': os.path.join(base_path_mvn, 'sta', 'l2'),
                       'filename_format': 'mvn_sta_l2_c6-32e64m_{date}_*.cdf'},
+
+        'static_c8': {'path': os.path.join(base_path_mvn, 'sta', 'l2'),
+                      'filename_format': 'mvn_sta_l2_c8-32e16d_{date}_*.cdf'},
 
         'static_c6_iv4': {'path': os.path.join(base_path_mvn, 'sta', 'iv4'),
                       'filename_format': 'mvn_sta_l2_c6-32e64m_{date}_iv4.cdf'},
@@ -200,6 +208,7 @@ def get_data(tint, var):
                                                                              "resolution":"32Hz"})
         res = {'Bmso':B, 'Pmso':P}     
         return res
+
     #%% read the magnetic field (1Hz), MSO and MSE
     elif var == 'Bmse':
         res = {'time': np.array([], dtype='datetime64[ns]'),
@@ -269,6 +278,7 @@ def get_data(tint, var):
                'Out_Vsw':res['Out_Vsw'], 'Out_Nsw':res['Out_Nsw'], 'Out_IMF':res['Out_IMF'], 'Out_Pdy':res['Out_Pdy'],
                'imf':res['imf'], 'xmse':res['xmse'],'ymse':res['ymse'], 'zmse':res['zmse'],'len':res['len']}  
         return res
+
     #%% read the SWIA omni data and onboardmoment
     elif var == 'swia_omni':
         res={  'time': np.array([], dtype='datetime64[ns]'),
@@ -355,6 +365,7 @@ def get_data(tint, var):
                'Temp':Temp,
                'omni_flux':omni_flux}
         return res
+
     # %% read the Swia 3d data
     elif var == 'swia_3d':
         nenergy, nphi, ntheta = 48, 16, 4
@@ -414,18 +425,38 @@ def get_data(tint, var):
             
        # convert the data to TSeries
         swea = ts_spectr(
-            time=res['time'],  # 时间维度（1D array, datetime64）
-            ener = np.flip(res['energy']),  # 能量维度（翻转顺序，从高能到低能）
-            data=np.flip(res['DEF'], axis=1),  # 数据体（二维矩阵，需与时间和能量匹配）
-            comp_name="energy",  # 能量轴的维度名
+            time=res['time'],
+            ener = np.flip(res['energy']),
+            data=np.flip(res['DEF'], axis=1),
+            comp_name="energy",
             attrs={
-                "name": "SWEA_omni_eflux",  # 可选元信息
+                "name": "SWEA_omni_eflux",
                 "Instrument": "SWEA",
                 "UNITS": "keV/(cm^2 s sr keV)",
             }
         )
         return swea
-    
+
+    # %% read the SWEA omni data
+    elif var == 'swea_scpot':
+        res = {'time': np.array([], dtype='datetime64[ns]'),
+               'scpot': np.array([], dtype=float),}
+
+        for date_file in dates_to_read:
+            filename = os.path.join(config['path'], config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d')))
+            if os.path.exists(filename):
+                mat_data = loadmat(filename)
+                time_array = irf_time(mat_data['time'],"datenum>datetime64")
+
+                # select the data within the interval
+                mask = (time_array >= np.datetime64(start_time)) & (time_array <= np.datetime64(end_time))
+                res['time'] = np.concatenate((res['time'], time_array[mask]))
+                res['scpot'] = np.concatenate((res['scpot'], mat_data['scpot'][mask]))
+
+        # convert the data to TSeries
+        res = ts_scalar(time=res['time'], data=res['scpot'])
+        return res
+
     #%% read the SWEA pad data
     elif var == 'swea_pad':
         res={  'time': np.array([], dtype='datetime64[ns]'),
@@ -533,6 +564,37 @@ def get_data(tint, var):
             res['mass']   = data['mass']
             scpot = ts_scalar(res["time"], res['scpot'], attrs={"name":"Spacecraft potential",
                                                                       "UNITS":"eV"} )
+            res['scpot'] = scpot
+        return res
+
+    # %% read the Static c8 data
+    elif var == 'static_c8':
+        nenergy, ndirection = 32, 16
+        res = {
+            'time': np.array([], dtype='datetime64[ns]'),
+            'energy': np.empty((0, nenergy)),
+            'DEF': np.empty((0, nenergy, ndirection)),
+            'count': np.empty((0, nenergy, ndirection)),
+            'scpot': np.array([], dtype=float),
+        }
+
+        for date_file in dates_to_read:
+            year, month, day = year_month_day(date_file)
+
+            # the format of CDF file
+            file_pattern = os.path.join(config['path'], year, month,
+                                        config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d')))
+
+            filename = glob.glob(file_pattern)[0]
+            data = static.read_c8(filename)
+            mask = (data['time'] >= np.datetime64(start_time)) & (data['time'] <= np.datetime64(end_time))
+            res['time'] = np.concatenate((res['time'], data['time'][mask]))
+            res['energy'] = np.vstack((res['energy'], data['energy'][mask, :]))
+            res['DEF'] = np.vstack((res['DEF'], data['DEF'][mask, :, :]))
+            res['count']  = np.vstack((res['count'], data['count'][mask, :, :]))
+            res['scpot'] = np.concatenate((res['scpot'], data['scpot'][mask]))
+            scpot = ts_scalar(res["time"], res['scpot'], attrs={"name": "Spacecraft potential",
+                                                                "UNITS": "eV"})
             res['scpot'] = scpot
         return res
 
@@ -813,8 +875,9 @@ def load_data(tint, var_list):
 
 if __name__ == '__main__':
     tint = ["2023-07-31T04:38:10", "2023-07-31T04:40:05"]
-    B, swia_omni, swia_3d = load_data(tint, ['B', 'swia_omni', 'swia_3d'])
-    swea_omni = load_data(tint, ['swea_omni'])
+    scpot = get_data(tint, 'swea_scpot')
+    # B, swia_omni, swia_3d = load_data(tint, ['B', 'swia_omni', 'swia_3d'])
+    # swea_omni = load_data(tint, ['swea_omni'])
 
 
 

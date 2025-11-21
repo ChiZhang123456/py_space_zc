@@ -14,9 +14,9 @@ def plot_pcolor_quiver(
     cmap: str = "Spectral_r",
     normalize_vectors: bool = True,
     arrow_length_factor: float = 1.0,       # <- NEW
-    quiver_scale: float = 30.0,
+    quiver_scale: float = 20.0,
     scale_units: str = "xy",                # <- NEW
-    quiver_width: float = 0.01,
+    quiver_width: float = 0.05,
     quiver_color: str = "k",
     xscale: Optional[str] = None,
     yscale: str = "linear",
@@ -123,5 +123,7 @@ def plot_pcolor_quiver(
         cbar = add_colorbar(ax, pcm, size_ratio=0.6, **cbar_kwargs)
         if cbar_label:
             cbar.set_label(cbar_label)
+
+    ax.tick_params(axis='both', direction='in')
 
     return ax, pcm, qs, cbar

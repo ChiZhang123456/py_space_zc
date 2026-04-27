@@ -2,7 +2,8 @@ import numpy as np
 from pyrfu import pyrf
 from py_space_zc import background_B, plot, ts_vec_xyz
 
-def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0]):
+def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
+          m_width_coeff = 1):
     """
     Perform Singular Value Decomposition (SVD)-based polarization analysis of
     magnetic field fluctuations using the `pyrfu.ebsp` routine.
@@ -72,7 +73,10 @@ def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0]):
     Bbgd = background_B(Bwave, window_length=window_length, overlap=overlap)
 
     # Call pyrfu.ebsp for SVD-based polarization analysis
-    polarization_options = dict(freq_int=freq_range, polarization=True, fac=True)
+    polarization_options = dict(freq_int=freq_range,
+                                polarization=True,
+                                fac=True,
+                                m_width_coeff = m_width_coeff)
     polarization = pyrf.ebsp(e_xyz, Bwave, Bbgd, Bbgd, r_xyz, **polarization_options)
 
     # Extract results from output dictionary

@@ -82,7 +82,6 @@ def plot_minpa_mod1_omni(ax, tint, species, interp=False , clim=None):
         raise ValueError(f"Unsupported species: {species}")
 
     ax.set_ylabel("$\\mathrm{MINPA}$\n$E_i$ [eV]")
-    ax.set_xlabel("Time")
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)

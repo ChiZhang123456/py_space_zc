@@ -83,7 +83,7 @@ class MvaGui:
             "bbox_to_anchor": (1, 0.5),
         }
         gs = gridspec.GridSpec(
-            3, 3, top=0.9, left=0.05, right=0.9, hspace=0.3, wspace=0.35
+            3, 3, top=0.9, left=0.13, right=0.85, hspace=0.3, wspace=0.35
         )
         # Time series data
         ax1 = fig.add_subplot(gs[0, :])

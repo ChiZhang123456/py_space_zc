@@ -67,6 +67,8 @@ from .gyro_information import gyro_information
 from .rotate_tensor import rotate_tensor
 from .xyz_2_lonlat import xyz_2_lonlat
 from .lonlat_2_xyz import lonlat_2_xyz
+from .filt import filt
+from .hybrid_alfven_speed import hybrid_alfven_speed
 # -----------------------------------------------------------------------------
 # Submodules
 # -----------------------------------------------------------------------------
@@ -96,7 +98,7 @@ __all__ = [
 
     # Math / statistics
     "sind", "cosd", "tand", "asind", "acosd", "atand", "atan2d", "cotd",
-    "ang", "delta_angle", "nanmean_longitude", "smooth","movemean",'background_B',
+    "ang", "delta_angle", "nanmean_longitude", "smooth","movemean",'background_B','filt',
 
     # Vector and coordinate transforms
     "dot", "cross", "lmn",
@@ -116,6 +118,7 @@ __all__ = [
     "pad_split_energy", "KH_condition", "plot_Bwave_svd",
 
     'pressure', 'gyro_information', 'rotate_tensor', "xyz_2_lonlat","lonlat_2_xyz",
+    'hybrid_alfven_speed',
 
     # Submodules
     "maven", "emm", "vdf", "mercury", "vlasitor", "ionization",

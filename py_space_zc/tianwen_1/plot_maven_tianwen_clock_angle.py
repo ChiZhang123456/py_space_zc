@@ -41,23 +41,23 @@ def plot_maven_tianwen_clock_angle(
 
     # choose style
     if option == "line":
-        plot.plot_clock_angle(ax, B["Bmso"], color="red",
+        plot.plot_clock_angle(ax, B["Bmso"], color="tab:red",
                               label="MAVEN", linestyle="-",
                               linewidth=linewidth)
-        plot.plot_clock_angle(ax, Btw["Bmso"], color="blue",
+        plot.plot_clock_angle(ax, Btw["Bmso"], color="tab:blue",
                               label="Tianwen-1", linestyle="-",
                               linewidth=linewidth)
 
     elif option == "dot":
-        plot.plot_clock_angle(ax, B["Bmso"], color="red",
+        plot.plot_clock_angle(ax, B["Bmso"], color="tab:red",
                               label="MAVEN", style="dot")
-        plot.plot_clock_angle(ax, Btw["Bmso"], color="blue",
+        plot.plot_clock_angle(ax, Btw["Bmso"], color="tab:blue",
                               label="Tianwen-1", style="dot")
 
     else:
         raise ValueError("option must be 'line' or 'dot'")
 
     ax.set_ylabel(r"$\phi$ (°)")
-    ax.legend()
+    # ax.legend()
 
     return ax

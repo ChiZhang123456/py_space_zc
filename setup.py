@@ -7,15 +7,6 @@ setup(
     author='Chi Zhang',
     author_email='zhangchi9508@gmail.com',
     description='Space physics analysis tools',
-    include_package_data=True,
-    package_data={
-        "py_space_zc": [
-            "ionization/*.txt",
-            "maven/*.txt",
-            "maven/*.sav",
-            "sputtering/*.mat",
-            ],
-    },
     license="MIT",
     include_package_data=True,
     package_data={

@@ -30,6 +30,8 @@ from .adjust_colorbar import adjust_colorbar
 from .set_xtick import set_xtick
 from .hist2d import hist2d
 from .hist1d import hist1d
+from .bar1d import bar1d
+from .connect_axes import connect_axes
 
 __all__ = [
     "plot_line",
@@ -54,4 +56,6 @@ __all__ = [
     "set_xtick",
     "hist2d",
     "hist1d",
+    "bar1d",
+    "connect_axes",
 ]

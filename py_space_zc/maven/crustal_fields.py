@@ -17,6 +17,30 @@ from py_space_zc.maven import get_base_path, get_data, coords_convert, lonlat2pc
 from py_space_zc.maven import get_data as maven_get_data  # optional alias
 from py_space_zc import sph2cart_vec  # from py_space_zc root level
 
+import os
+import numpy as np
+import scipy.io as scio
+import pyshtools as pysh
+from pymagglobal.utils import i2lm_l, i2lm_m
+from py_space_zc.maven import get_base_path, lonlat2pc 
+from py_space_zc import sph2cart_vec
+
+# raw_source_path = os.path.join(get_base_path(), "supporting_data", "L1.mat")
+# raw_data = scio.loadmat(raw_source_path)
+# coeff_array = np.array(raw_data["L1"]).squeeze()
+# coeffs_pysh = np.zeros((2, 111, 111))
+# for i, val in enumerate(coeff_array):
+#     l = i2lm_l(i)
+#     m = abs(i2lm_m(i))
+#     if i2lm_m(i) < 0:
+#         coeffs_pysh[1, l, m] = val  # h_lm
+#     else:
+#         coeffs_pysh[0, l, m] = val  # g_lm
+#
+#     # Save directly into the module folder
+# scio.savemat(COEFF_PATH, {"coeffs_pysh": coeffs_pysh})
+
+
 #%% 
 def cf_model(alt_km, lat_deg, lon_deg):
     """
@@ -39,31 +63,20 @@ def cf_model(alt_km, lat_deg, lon_deg):
         Magnetic field in Cartesian (x, y, z) in PC frame.
     """
     # Load SH coefficients from .mat file
-    coeffs_path = os.path.join(get_base_path(), "supporting_data", "L1.mat")
+    coeffs_path =  "gao_110_crustal_field_model_coeff.mat"
     data = scio.loadmat(coeffs_path)
-    coeff_array = np.array(data["L1"]).squeeze()
-
-    # Convert to pyshtools-compatible array
-    coeffs_pysh = np.zeros((2, 111, 111))  # (2, lmax+1, lmax+1)
-    for i, val in enumerate(coeff_array):
-        l = i2lm_l(i)
-        m = abs(i2lm_m(i))
-        if i2lm_m(i) < 0:
-            coeffs_pysh[1, l, m] = val
-        else:
-            coeffs_pysh[0, l, m] = val
 
     # Create SHMagCoeffs object
-    G110 = pysh.SHMagCoeffs.from_array(coeffs_pysh, r0=3393.5)
+    G110 = pysh.SHMagCoeffs.from_array(data["coeffs_pysh"], r0=3393.5)
     Bsph_pc = G110.expand(
         a=alt_km + 3393.5, lat=lat_deg, lon=lon_deg,
         degrees=True, lmax=110, sampling=2, extend=True
     )
 
     # Convert to Cartesian in PC frame
+
     Ppc = lonlat2pc(alt_km, lon_deg, lat_deg)
     Bxyz_pc = sph2cart_vec(Ppc, Bsph_pc)
-
     return Bsph_pc, Bxyz_pc
 
 #%% 
@@ -127,8 +140,9 @@ def cf_model_mso(Pmso):
 if __name__ == "__main__":
     tint = ['2015-09-18 22:21:00', '2015-09-18 22:23:30']
     B = maven_get_data(tint, 'B')  # or get_data if already imported
+
     Pmso = B["Pmso"]
-    #Bmodel = cf_model_mso(Pmso)
+    Bmodel = cf_model_mso(Pmso)
 
 
 

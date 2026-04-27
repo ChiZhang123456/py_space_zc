@@ -8,6 +8,9 @@ Created on Mon Jul 22 11:11:37 2024
 import spiceypy as spice
 import numpy as np
 from py_space_zc import irf_time, ts_vec_xyz
+from py_space_zc.maven import load_maven_spice
+
+
 
 def coords_convert(inp, option):
     """
@@ -27,12 +30,14 @@ def coords_convert(inp, option):
     time = inp.time.data
     data = inp.data
         
-    # 将 datetime64 转换为 datetime
+    # Convert numpy.datetime64 to standard datetime objects
     time_dt = irf_time(time,"datetime64>datetime")
     
-    # 将 datetime 转换为 ISO 格式的字符串
+    # Convert datetime objects to ISO strings for SPICE compatibility
     iso_strings = [d.strftime("%Y-%m-%dT%H:%M:%S.%f") for d in time_dt]
-    
+
+    # Convert ISO strings to Ephemeris Time (ET) seconds past J2000
+    load_maven_spice()
     et = np.array([spice.str2et(iso_str) for iso_str in iso_strings])
     
 
@@ -64,5 +69,7 @@ def coords_convert(inp, option):
     
     # Convert to pyrf.timeseries
     Out = ts_vec_xyz(inp.time.data, out, attrs_new)
-    
+
+    spice.kclear()
+
     return Out

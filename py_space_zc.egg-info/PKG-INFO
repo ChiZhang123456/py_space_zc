@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: py_space_zc
+Version: 1.0
+Summary: Space physics analysis tools
+Author: Chi Zhang
+Author-email: zhangchi9508@gmail.com
+License: MIT
+License-File: LICENSE.txt
+Requires-Dist: spacepy
+Requires-Dist: spiceypy
+Requires-Dist: pyrfu
+Requires-Dist: pyshtools
+Requires-Dist: pyvlasiator
+Requires-Dist: xarray
+Dynamic: author
+Dynamic: author-email
+Dynamic: license
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary

@@ -82,7 +82,7 @@ def _2d(n, T, ux, uy, Vx, Vy, species):
     Vy = np.asarray(Vy) * 1e3
 
     # Thermal speed
-    vth = np.sqrt(2 * e * T / m)
+    vth = np.sqrt(2 * qe * T / m)
 
     # Maxwellian PSD
     f = n / (np.pi * vth**2) * np.exp(-((Vx - ux)**2 + (Vy - uy)**2) / vth**2)

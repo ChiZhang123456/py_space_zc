@@ -15,7 +15,6 @@ def hist1d(
         lw=2,
         label=None,
         marker=None,
-        return_all=False,
 ):
     """
     Draw a 1D binned statistic plot (like hist2d but for 1D).
@@ -44,8 +43,6 @@ def hist1d(
         Legend label.
     marker : str or None
         Marker style.
-    return_all : bool
-        If True, return (ax, bin_centers, stat_values)
 
     Returns
     -------
@@ -53,6 +50,8 @@ def hist1d(
     bin_centers : ndarray
     stat_values : ndarray
     """
+
+
 
     x = np.asarray(x)
     if y is not None:
@@ -97,7 +96,4 @@ def hist1d(
     if label:
         ax.legend()
 
-    if return_all:
-        return ax, bin_centers, H
-    else:
-        return ax
+    return ax, bin_centers, H

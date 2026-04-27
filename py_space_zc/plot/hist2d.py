@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.stats import binned_statistic_2d
 
-
 def hist2d(
     ax,
     x,
@@ -21,41 +20,16 @@ def hist2d(
     cmap='Spectral_r',
     contour_levels=10,
     contour_kwargs=None,
+    min_count=1,
 ):
     """
-    Draw a 2D histogram using pcolormesh, with optional weighting and colorbar.
+    Draw a 2D histogram using pcolormesh, with optional weighting, masking, and colorbar.
 
     Parameters
     ----------
-    ax : matplotlib.axes.Axes or None
-        Axes to draw the plot. If None, create a new one.
-    x, y : array-like
-        Input 1D arrays for X and Y coordinates.
-    weight : array-like or None, optional
-        Weight values (same length as x/y), for 'sum', 'mean', 'median'.
-        If None, unweighted count is used.
-    bins : int or [int, int] or [array, array], optional
-        Number of bins or bin edges for x and y.
-    xrange : [float, float], optional
-        Limits of x-axis.
-    yrange : [float, float], optional
-        Limits of y-axis.
-    xscale, yscale : {'lin', 'log'}, optional
-        Axis scale for x and y.
-    cscale : {'lin', 'log'}, optional
-        Color scale of the pcolormesh.
-    stat : {'count', 'sum', 'mean', 'median'}, optional
-        Statistic to compute per bin.
-    contour : bool, optional
-        Whether to draw contour lines on top.
-    clim : [float, float], optional
-        Color scale limits.
-    cmap : str, optional
-        Colormap name.
-    contour_levels : int or list, optional
-        Number or list of contour levels.
-    contour_kwargs : dict, optional
-        Additional kwargs passed to ax.contour.
+    ...
+    min_count : int, optional
+        Minimum number of samples per bin required. Bins with fewer samples are set to NaN.
 
     Returns
     -------
@@ -65,26 +39,23 @@ def hist2d(
         The pcolormesh object.
     cbar : Colorbar
         The colorbar object.
-    H : The hist 2D results
+    H : ndarray
+        The 2D histogram/statistics result.
     """
 
-    # Ensure arrays
     x = np.asarray(x)
     y = np.asarray(y)
     if weight is not None:
         weight = np.asarray(weight)
 
-    # Set up axis
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 5))
 
-    # Handle axis scale
     if xscale == 'log':
         x = x[x > 0]
     if yscale == 'log':
         y = y[y > 0]
 
-    # Define bin edges
     if isinstance(bins, int):
         xbins = ybins = bins
     elif isinstance(bins, (list, tuple, np.ndarray)) and len(bins) == 2:
@@ -115,12 +86,20 @@ def hist2d(
     # Choose statistic function
     stat_func = stat if stat in ['count', 'sum', 'mean', 'median'] else 'count'
 
-    # Compute histogram
+    # Main histogram
     H, xedge, yedge, _ = binned_statistic_2d(
         x, y, weight, statistic=stat_func, bins=[xedges, yedges]
     )
 
-    # Transpose for pcolormesh (which expects [Y,X])
+    # Compute bin counts for masking
+    Ncount, _, _, _ = binned_statistic_2d(
+        x, y, None, statistic='count', bins=[xedges, yedges]
+    )
+
+    # Mask bins with too few samples
+    H[Ncount < min_count] = np.nan
+
+    # Transpose for pcolormesh
     H = H.T
 
     # Setup color normalization
@@ -130,9 +109,7 @@ def hist2d(
         if clim is not None:
             norm = LogNorm(vmin=clim[0], vmax=clim[1])
         else:
-            vmin = np.nanmin(H)
-            vmax = np.nanmax(H)
-            norm = LogNorm(vmin=vmin, vmax=vmax)
+            norm = LogNorm(vmin=np.nanmin(H), vmax=np.nanmax(H))
 
     # Plot with pcolormesh
     pcm = ax.pcolormesh(
@@ -152,11 +129,9 @@ def hist2d(
         Xc, Yc = np.meshgrid((xedges[:-1] + xedges[1:]) / 2, (yedges[:-1] + yedges[1:]) / 2)
         ax.contour(Xc, Yc, H, levels=contour_levels, **cs_kwargs)
 
-    # Set axis scale
     ax.set_xscale(xscale)
     ax.set_yscale(yscale)
 
-    # Create colorbar
     cbar = plt.colorbar(pcm, ax=ax, pad=0.01, fraction=0.02)
 
     return ax, pcm, cbar, H

@@ -1,4 +1,6 @@
 import numpy as np
+from py_space_zc import ts_scalar, ts_vec_xyz
+import xarray as xr
 
 def tint_data(time: np.ndarray, ts: np.datetime64, te: np.datetime64, *datas):
     """

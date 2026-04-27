@@ -61,10 +61,12 @@ from .plot_data import (
     plot_B_mse,
     plot_swia_omni,
     plot_swia_pad,
+    plot_swia_reduced_1d,
     plot_swia_reduced_2d,
     plot_swia_vpar_perp,
     plot_swea_omni,
     plot_swea_pad,
+    plot_swea_resample_pad,
     plot_sta_c6,
     plot_sta_c8,
     plot_d1_reduced_2d,
@@ -72,6 +74,7 @@ from .plot_data import (
     plot_crustal_field_map,
     plot_sta_dens,
     plot_d1_flux,
+
 )
 from .show_path_xr import show_path_xr
 
@@ -80,10 +83,15 @@ from .show_path_xr import show_path_xr
 # -----------------------------------------------------------------------------
 from .bs_mpb import bs_mpb
 from .BS_MPB_3d_mars import BS_MPB_3d_mars
+from .bs_mpb_theta import bs_mpb_theta
+from .bs_normal import bs_normal
 from .mpb_tangent_direction import mpb_tangent_direction
 from .mpb_normal import mpb_normal
 from .In_MPB import In_MPB
 from .get_vsc_mso import get_vsc_mso
+from .frac_dis import frac_dis
+from .bs_normal_theta import bs_normal_theta
+from .mvn_swia_region_id import mvn_swia_region_id
 
 # -----------------------------------------------------------------------------
 # Public API
@@ -128,10 +136,12 @@ __all__ = [
     "plot_B_mse",
     "plot_swia_omni",
     "plot_swia_pad",
+    "plot_swia_reduced_1d",
     "plot_swia_reduced_2d",
     "plot_swia_vpar_perp",
     "plot_swea_omni",
     "plot_swea_pad",
+    "plot_swea_resample_pad",
     "plot_sta_c6",
     "plot_sta_c8",
     "plot_d1_reduced_2d",
@@ -148,7 +158,11 @@ __all__ = [
     "In_MPB",
     "mpb_tangent_direction",
     "mpb_normal",
-
+    "frac_dis",
+    "bs_mpb_theta",
+    "bs_normal_theta",
+    "bs_normal",
+    "mvn_swia_region_id",
 ]
 
 # -----------------------------------------------------------------------------

@@ -27,7 +27,6 @@ from .show_maven_tianwen_data import show_maven_tianwen_data
 from .plot_maven_tianwen_dca import plot_maven_tianwen_dca
 from .plot_maven_tianwen_yz_mse import plot_maven_tianwen_yz_mse
 
-
 __all__ = [
     # base
     "db_init",
@@ -39,6 +38,7 @@ __all__ = [
     "minpa_omni"
     "plot_B",
     "plot_minpa_mod1_omni",
+
     #
     "plot_maven_tianwen_xr",
     "plot_maven_tianwen_yz",

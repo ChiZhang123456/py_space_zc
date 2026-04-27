@@ -35,9 +35,10 @@ def get_data(tint, var):
         - 'Bmse'        : 1-second magnetic field in MSE coordinates (.mat files)
 
         SWIA (Solar Wind Ion Analyzer):
-        - 'swia_omni'   : Omnidirectional moments & DEF from SWIA onboard survey mode (.cdf)
-        - 'swia_3d'     : 3D distribution function from coarse survey mode (.cdf)
-        - 'swia_moment' : Derived ion moments from SWIA coarse 3d data  (.mat from Chi Zhang)
+        - 'swia_omni'      : Omnidirectional moments & DEF from SWIA onboard survey mode (.cdf)
+        - 'swia_3d_coarse' : 3D distribution function from coarse survey mode (.cdf)
+        - 'swia_3d_fine' : 3D distribution function from fine survey mode (.cdf)
+        - 'swia_moment'    : Derived ion moments from SWIA coarse 3d data  (.mat from Chi Zhang)
 
         SWEA (Solar Wind Electron Analyzer):
         - 'swea_omni'   : Omnidirectional electron spectra (.cdf)
@@ -95,8 +96,14 @@ def get_data(tint, var):
                       'filename_mom_format': 'mvn_swi_l2_onboardsvymom_{date}_*.cdf',
                       'filename_def_format': 'mvn_swi_l2_onboardsvyspec_{date}_*.cdf'},
 
-        'swia_3d': {'path': os.path.join(base_path_mvn, 'swi', 'l2'),
-                      'filename_format': 'mvn_swi_l2_coarsesvy3d_{date}_*.cdf',},
+        'swia_3d_coarse': {'path': os.path.join(base_path_mvn, 'swi', 'l2'),
+                           'filename_format': 'mvn_swi_l2_coarsesvy3d_{date}_*.cdf',},
+
+        'swia_3d_fine': {'path': os.path.join(base_path_mvn, 'swi', 'l2'),
+                         'filename_format': 'mvn_swi_l2_finesvy3d_{date}_*.cdf', },
+
+        'swia_moment': {'path': os.path.join(base_path_mvn, 'swi', 'l3', 'moments_swia'),
+                          'filename_format': 'moments_swia_{date}.mat'},
 
         'swea_omni':{'path': os.path.join(base_path_mvn, 'swe', 'l2'),
                       'filename_format': 'mvn_swe_l2_svyspec_{date}_*.cdf'},
@@ -367,7 +374,7 @@ def get_data(tint, var):
         return res
 
     # %% read the Swia 3d data
-    elif var == 'swia_3d':
+    elif var == 'swia_3d_coarse':
         nenergy, nphi, ntheta = 48, 16, 4
         res = {
             'time': np.array([], dtype='datetime64[ns]'),
@@ -396,6 +403,92 @@ def get_data(tint, var):
                                        species="H+",
                                        direction_is_velocity=True, )
         return swia_vdf
+
+    # %% read the Swia 3d data
+    elif var == 'swia_3d_fine':
+        nenergy, nphi, ntheta = 48, 10, 12
+        res = {
+            'time': np.array([], dtype='datetime64[ns]'),
+            'energy': np.empty((0, nenergy)),
+            'DEF': np.empty((0, nenergy, nphi, ntheta)),
+            'phi':np.array([], dtype=np.float64),
+            'theta':np.array([], dtype=np.float64),
+        }
+        for date_file in dates_to_read:
+            year, month, day = year_month_day(date_file)
+            # the format of CDF file
+            file_pattern = os.path.join(config['path'], year, month,
+                                        config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d')))
+            filename = glob.glob(file_pattern)[0]
+            data = swia.read_swia_3d(filename)
+            res['time'] = np.concatenate((res['time'], data['time']))
+            res['DEF'] = np.vstack((res['DEF'], data['DEF']))
+
+        time, DEF = tint_data(res["time"],
+                              np.datetime64(start_time),  np.datetime64(end_time),
+                              res["DEF"])
+
+        swia_vdf = create_pdist_skymap(time, data["energy"],
+                                       DEF, data["phi"], data["theta"],
+                                       Units="keV/(cm^2 s sr keV)",
+                                       species="H+",
+                                       direction_is_velocity=True, )
+        return swia_vdf
+
+    # %% read the swia moment data made by Chi Zhang
+    elif var == "swia_moment":
+        res = {'time': np.array([], dtype='datetime64[ns]'),
+               'n': np.array([], dtype=float),
+               'V': np.empty((0, 3), dtype=float),
+               'T_mag': np.empty((0, 6), dtype=float),
+               'P_mag': np.empty((0, 6), dtype=float),
+               'Bswia': np.empty((0, 3), dtype=float),
+               'bel': np.array([], dtype=float),
+               'baz': np.array([], dtype=float),
+               'sun_el': np.array([], dtype=float),
+               'sun_az': np.array([], dtype=float),
+               }
+
+        for date_file in dates_to_read:
+            year, month, day = year_month_day(date_file)
+            file_pattern = os.path.join(config['path'], config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d')))
+            filename = glob.glob(file_pattern)[0]
+            if os.path.exists(filename):
+                mat_data = loadmat(filename)
+                time_array = irf_time(mat_data['time'], "datenum>datetime64")
+                # select the data within the interval
+                mask = (time_array >= np.datetime64(start_time)) & (time_array <= np.datetime64(end_time))
+                res['time'] = np.concatenate((res['time'], time_array[mask]))
+                res['n'] = np.concatenate((res['n'], mat_data['n'][mask]))
+                res['V'] = np.vstack((res['V'], mat_data['Vmso'][np.squeeze(mask), :]))
+                res['Bswia'] = np.vstack((res['Bswia'], mat_data['Bswia'][np.squeeze(mask), :]))
+                res['T_mag'] = np.vstack((res['T_mag'], mat_data['T_mag'][np.squeeze(mask), :]))
+                res['P_mag'] = np.vstack((res['P_mag'], mat_data['P_mag'][np.squeeze(mask), :]))
+                res['sun_el'] = np.concatenate((res['sun_el'], mat_data['sun_el'][mask]))
+                res['sun_az'] = np.concatenate((res['sun_az'], mat_data['sun_az'][mask]))
+                res['bel'] = np.concatenate((res['bel'], mat_data['bel'][mask]))
+                res['baz'] = np.concatenate((res['baz'], mat_data['baz'][mask]))
+        res['n'] = ts_scalar(res['time'], res['n'], attrs={"name": "SWIA_density",
+                                                           "Instrument": "SWIA",
+                                                           "UNITS": "cm^-3",
+                                                           "species": "H+"})
+        res['V'] = ts_vec_xyz(res['time'], res['V'], attrs={"name": "SWIA_velocity",
+                                                            "Instrument": "SWIA",
+                                                            "UNITS": "km/s",
+                                                            "coordinates": "MSO",})
+        res['Bswia'] = ts_vec_xyz(res['time'], res['Bswia'], attrs={"name": "Mag",
+                                                                    "UNITS": "nT",
+                                                                    "coordinates": "SWIA",})
+        res['sun_az'] = ts_scalar(res['time'], res['sun_az'], attrs={"name": "sun_azimuth",
+                                                                     "Instrument": "SWIA",})
+        res['sun_el'] = ts_scalar(res['time'], res['sun_el'], attrs={"name": "sun_elevation",
+                                                                     "Instrument": "SWIA", })
+        res['baz'] = ts_scalar(res['time'], res['baz'], attrs={"name": "B_azimuth",
+                                                               "Instrument": "SWIA",})
+        res['bel'] = ts_scalar(res['time'], res['bel'], attrs={"name": "B_elevation",
+                                                               "Instrument": "SWIA", })
+
+        return res
 
 
     #%% read the SWEA omni data
@@ -874,8 +967,9 @@ def load_data(tint, var_list):
 
 
 if __name__ == '__main__':
-    tint = ["2023-07-31T04:38:10", "2023-07-31T04:40:05"]
-    scpot = get_data(tint, 'swea_scpot')
+    tint = ["2015-01-18T01:20","2015-01-18T02:30"]
+    # scpot = get_data(tint, 'swea_scpot')
+    swia_3d = get_data(tint, "swia_3d")
     # B, swia_omni, swia_3d = load_data(tint, ['B', 'swia_omni', 'swia_3d'])
     # swea_omni = load_data(tint, ['swea_omni'])
 

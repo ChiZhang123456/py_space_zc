@@ -144,7 +144,7 @@ def plot_pcolor(
         fig = ax.figure
         if cbar_kwargs is None:
             cbar_kwargs = {}
-        cbar = add_colorbar(ax, pcm, size_ratio = 0.6, )
+        cbar = add_colorbar(ax, pcm, size_ratio = 0.6, thickness_ratio = 0.02, pad = 0.005 )
         if cbar_label:
             cbar.set_label(cbar_label)
     ax.tick_params(axis='both', direction='in')

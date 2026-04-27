@@ -58,7 +58,7 @@ def plot_line(axis, inp, **kwargs):
     time = inp.time
     # If 3 lines -> red, blue, black colors
     if data.ndim == 2 and data.shape[1] == 3 and "color" not in kwargs:
-        colors = ["r", "b", "k"]
+        colors = ['tab:red', 'tab:blue', 'tab:green']
         for j in range(3):
             axis.plot(time, data[:, j], color=colors[j], **kwargs)
     else:

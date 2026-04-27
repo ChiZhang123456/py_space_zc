@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from .set_axis import set_axis
+
 
 def subplot(
         nrows: int,
@@ -14,7 +16,7 @@ def subplot(
         sharey: bool = False,
 ):
     """
-    Create subplots on an existing figure (if provided) or a new one.
+    Create subplots with a 2D axes array return and global Times New Roman font.
 
     Parameters
     ----------
@@ -25,32 +27,40 @@ def subplot(
     fig : matplotlib.figure.Figure or None, optional
         Target figure. If None, a new figure will be created.
     figsize : tuple of float, optional
-        Figure size in inches (width, height). Used only when `fig is None`.
+        Figure size in inches (width, height). Used only if `fig is None`.
     hspace, wspace : float, optional
-        Vertical / horizontal spacing between subplots.
+        Vertical and horizontal spacing between subplots.
     bottom, top, left, right : float, optional
         Figure margins in normalized figure coordinates [0, 1].
     sharex, sharey : bool, optional
-        If True, subplots share the same x/y-axis. When enabled:
-        - Only the bottom row shows x tick labels.
-        - Only the leftmost column shows y tick labels.
+        If True, subplots share the same x or y-axis.
+        - sharex: Only the bottom row displays x-tick labels.
+        - sharey: Only the leftmost column displays y-tick labels.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
-        The figure (existing or newly created).
-    axs : list[matplotlib.axes.Axes]
-        Axes in row-major order.
+        The figure object.
+    axs : numpy.ndarray
+        A 2D array of Axes objects of shape (nrows, ncols).
+        Access via axs[row, col].
     """
 
-    if nrows < 1 or ncols < 1:
-        raise ValueError("nrows and ncols must be >= 1")
+    # --- 1. Global Font Configuration ---
+    # Set default font to Times New Roman
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+    # Ensure minus signs display correctly with Times New Roman
+    plt.rcParams['axes.unicode_minus'] = False
 
-    # Use existing figure or create a new one
+    if nrows < 1 or ncols < 1:
+        raise ValueError("nrows and ncols must be at least 1.")
+
+    # --- 2. Initialize Figure ---
     if fig is None:
         fig = plt.figure(figsize=figsize)
 
-    # Build a GridSpec on this figure
+    # --- 3. Define GridSpec Layout ---
     gspec = fig.add_gridspec(
         nrows=nrows,
         ncols=ncols,
@@ -62,32 +72,40 @@ def subplot(
         right=right,
     )
 
-    axs = []
+    # --- 4. Create Subplots in a 2D Structure ---
+    # We use an object-type numpy array to allow 2D indexing: axs[i, j]
+    axs = np.empty((nrows, ncols), dtype=object)
+
     for i in range(nrows):
         for j in range(ncols):
-            if i == 0 and j == 0:
-                ax = fig.add_subplot(gspec[i, j])
-            else:
-                ax = fig.add_subplot(
-                    gspec[i, j],
-                    sharex=axs[j] if sharex else None,          # same column
-                    sharey=axs[i * ncols] if sharey else None,  # same row
-                )
-            axs.append(ax)
+            # Axis sharing logic:
+            # sharex links to the first row (row 0)
+            # sharey links to the first column (col 0)
+            target_sharex = axs[0, j] if (sharex and i > 0) else None
+            target_sharey = axs[i, 0] if (sharey and j > 0) else None
 
-    # Hide redundant tick labels when sharing
+            ax = fig.add_subplot(
+                gspec[i, j],
+                sharex=target_sharex,
+                sharey=target_sharey
+            )
+            axs[i, j] = ax
+
+    # --- 5. Manage Tick Label Visibility ---
     if sharex or sharey:
         for i in range(nrows):
             for j in range(ncols):
-                idx = i * ncols + j
+                # Visibility conditions:
+                # Show X labels only if it's the bottom row or sharing is off
                 show_x = (i == nrows - 1) or (not sharex)
+                # Show Y labels only if it's the first column or sharing is off
                 show_y = (j == 0) or (not sharey)
+
                 try:
-                    set_axis(axs[idx],
-                             show_xticklabels=show_x,
-                             show_yticklabels=show_y)
+                    # Attempt to use custom helper function
+                    set_axis(axs[i, j], show_xticklabels=show_x, show_yticklabels=show_y)
                 except Exception:
-                    axs[idx].tick_params(labelbottom=show_x,
-                                         labelleft=show_y)
+                    # Fallback to native Matplotlib parameters
+                    axs[i, j].tick_params(labelbottom=show_x, labelleft=show_y)
 
     return fig, axs

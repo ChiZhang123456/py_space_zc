@@ -17,6 +17,7 @@ Functions include:
 - `plot_d1_flux`: Compute and show STATIC ion flux time series.
 - `plot_swea_omni`: SWEA omnidirectional electron spectra.
 - `plot_swea_pad`: SWEA pitch angle distribution over a defined energy range.
+- 'plot_swea_resample_pad': SWEA resampled pitch angle distribution over a defined energy range.
 - `plot_crustal_field_map`: Draw Mars crustal magnetic field contour map from Langlais model.
 """
 
@@ -30,6 +31,15 @@ from py_space_zc import ts_spectr, norm, ts_vec_xyz, ts_scalar, plot, vdf, time_
 import matplotlib.cm as cm
 from typing import Union, Iterable, Tuple, Optional
 from pyrfu import pyrf
+
+# --- Global Figure Configuration ---
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["font.serif"] = ["Times New Roman"] + plt.rcParams["font.serif"]
+plt.rcParams['mathtext.fontset'] = 'stix'
+# Fix the "missing minus sign" hyphen issue in Times New Roman
+plt.rcParams['axes.unicode_minus'] = False
+# Optional: Set global font size if needed
+# plt.rcParams['font.size'] = 12
 
 #%% Show the Bmso data (1Hz)
 def plot_B(ax, tint):
@@ -90,8 +100,7 @@ def plot_swia_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     else:
         ax, cax = plot_spectr(ax, swia["omni_flux"], yscale="log", cscale="log",
                               cmap=cmap, clim=clim)
-
-    ax.set_ylabel("$SWIA$\n$E_i$ [eV]")
+    ax.set_ylabel("SWIA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=12)
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     ax.set_ylim([25, 20000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
@@ -131,6 +140,89 @@ def plot_swia_pad(ax, tint, energyrange = [0.0, 10000.0],cmap='Spectral_r', opti
         label_str = f"{e1/1000:.1f}–{e2/1000:.1f} keV"
     plot.add_text(ax, label_str, 0.98, 0.98, color = 'white', facecolor = 'gray')
     return ax
+
+#%% Show the SWIA reduced 1d data
+def plot_swia_reduced_1d(
+        ax: Optional[plt.Axes],
+        swia_3d,
+        mso_axis: Union[np.ndarray, Iterable[float]],
+        vg: Union[np.ndarray, Iterable[float], None] = None,
+        *,
+        cmap: str = "Spectral_r",
+        ylabel: str = "V (km/s)",
+        clim: Optional[Tuple[float, float]] = None,
+):
+    """
+    Plot a 1D reduction of MAVEN SWIA ion VDF onto the direction of mso_axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes or None
+        If None, a new figure/axes will be created.
+    swia_3d :
+    mso_axis : array-like
+        vectors in MSO coordinates. Shapes can be (3,), (1,3),
+        or (nt,3) aligned with d1['time'].
+    species : str
+        One of {"H","H+","O","O+","O2","O2+"} (case-insensitive).
+    vg : array-like or None
+        1D Cartesian velocity grid for reduction. Provided in km/s.
+    correct_background : bool, default False
+        If True, apply STATIC D1 background correction.
+    correct_vsc : bool, default False
+        If True, estimate spacecraft velocity in STATIC frame and apply correction.
+    cmap : str, default "Spectral_r"
+        Colormap name.
+    ylabel : str
+        Axis labels (displayed in km/s).
+    clim : (vmin, vmax) or None
+        Color limits passed to the plotting function.
+
+    Returns
+    -------
+    ax, cax : (matplotlib.axes.Axes, matplotlib.axes.Axes)
+        Axes for the image and its colorbar.
+    """
+
+    # 1) Ensure we have an Axes to draw on
+    # 1) Ensure we have an Axes to draw on
+    if ax is None:
+        _, ax = plt.subplots(figsize=(6, 5))
+
+    # 2) Normalize vg_2d units: reducer expects m/s; display uses km/s
+    vg_arr = None
+    xylim_kms = (-600.0, 600.0)  # default display limits in km/s
+    if vg is not None:
+        vg_arr = np.asarray(vg, dtype=float)
+        xylim_kms = (float(np.nanmin(vg_arr)), float(np.nanmax(vg_arr)))
+
+    # 3) Perform reduction
+    f1d = maven.swia.reduced_swia_1d(
+        swia_3d, mso_axis, vg_1d=vg_arr,)
+
+    ax, pcm, cax = plot.plot_pcolor(ax, f1d.time.data, f1d.vx.data, f1d.data, 
+                                    cscale='log',
+                                    clim=clim, cmap = cmap)
+    cax.remove()
+    cax = plot.add_colorbar(ax, pcm, size_ratio = 0.8, 
+                            thickness_ratio = 0.015, pad = 0.005 )
+    xmin, xmax = xylim_kms
+    ax.plot([f1d.time.data[0], f1d.time.data[-1]], [0, 0], 
+            color="grey", linestyle="--", linewidth=1)
+
+    # 7) Axes limits and labels
+    ax.set_ylim(*xylim_kms)
+    ax.set_xlim(f1d.time.data[0], f1d.time.data[-1])
+    ax.set_ylabel(ylabel)
+    ax.grid(True, color='grey', linewidth=0.2)
+    cax.set_label(r"$\mathrm{s\,m^{-4}}$")
+    # Add label
+    bbox_props = dict(boxstyle='round,pad=0.3',
+                      facecolor='black', edgecolor='none',
+                      alpha=0.6)
+    ax.text(0.97, 0.97, "SWIA", transform=ax.transAxes, color='white',
+            ha='right', va='top', fontsize=12, bbox=bbox_props)
+    return ax, cax
 
 
 # %% Show the SWIA 2d-reduced vdf data
@@ -183,19 +275,22 @@ def plot_swia_reduced_2d(
         _, ax = plt.subplots(figsize=(6, 5))
 
     # 2) Normalize vg_2d units: reducer expects m/s; display uses km/s
-    vg_ms_for_reduce = None
-    xylim_kms = (-600.0, 600.0)  # default display limits in km/s
     if vg_2d is not None:
         vg_arr = np.asarray(vg_2d, dtype=float)
-        vg_ms_for_reduce = vg_arr * 1e3
         xylim_kms = (float(np.nanmin(vg_arr)), float(np.nanmax(vg_arr)))
+    else:
+        vg_arr = np.linspace(-600.0,600.0,600)
+        xylim_kms = (-600.0, 600.0)  # default display limits in km/s
 
     # 3) Perform reduction
     f2d = maven.swia.reduced_swia_2d(
-        swia_3d, t_2d, mso_axis1, mso_axis2, vg_2d=vg_ms_for_reduce,)
+        swia_3d, mso_axis1, mso_axis2, vg_2d=vg_arr,)
 
     # 4) Average over time dimension if present
-    f2d_for_plot = f2d
+    f2d_for_plot = time_eval(f2d, t_2d)
+    t_vals = np.array(f2d_for_plot.time.data)
+    
+    
     try:
         if hasattr(f2d, "dims") and ("time" in getattr(f2d, "dims", [])):
             f2d_for_plot = f2d.mean(dim="time")
@@ -225,9 +320,9 @@ def plot_swia_reduced_2d(
         cax.set_ylabel(r"$\mathrm{s^3\,m^{-6}}$")
 
     # 9) Add title
-    t_vals = np.array(f2d.time)
+
     if t_vals.size == 1:
-        t_str = np.datetime_as_string(t_vals[0], unit='s')[11:]
+        t_str = np.datetime_as_string(t_vals, unit='s')[11:]
     else:
         t_min_str = np.datetime_as_string(t_vals.min(), unit='s')[11:]
         t_max_str = np.datetime_as_string(t_vals.max(), unit='s')[11:]
@@ -263,7 +358,7 @@ def plot_swia_vpar_perp(ax, time,
     par_perp = np.where(par_perp < 1e-8, np.nan, par_perp)
     _, pcm, cax = plot.plot_pcolor(ax, vpar, vperp, par_perp,
                                    cscale='log', clim=clim)
-    plot.adjust_colorbar(ax, cax, pad=0.01, height_ratio=0.6, width=0.015)
+    plot.adjust_colorbar(ax, cax, pad=0.01, height_ratio=0.8, width=0.01)
     plot.set_axis(ax, xlim=(-800.0, 800.0), ylim=(0.0, 800.0),
                   fontsize=11, tick_fontsize=12, label_fontsize=12)
     cax.ax.set_ylabel(r'Phase Space Density [s$^3$/m$^6$]')
@@ -345,7 +440,7 @@ def plot_sta_c6(ax, tint, species, clim=None, cmap = 'Spectral_r',correct_backgr
 
     # --- Plot spectrogram ---
     if clim is None:
-        clim = [1e4, 5e7]
+        clim = [1e4, 1e7]
 
     ax, cax = plot_spectr(ax, c6_combined, yscale="log", cscale="log",
                           clim = clim, cmap=cmap)
@@ -372,16 +467,15 @@ def plot_sta_c6(ax, tint, species, clim=None, cmap = 'Spectral_r',correct_backgr
 
     # --- Axes cosmetics ---
     ax.set_ylabel(r"$\mathrm{STATIC}$" "\n" r"$E_i$ [eV]")
-    ax.set_xlabel("Time")
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
     ax.set_yticks([1e1, 1e2, 1e3, 1e4])
     cax.set_ylabel(r"DEF" "\n" r"[keV/(cm$^2$ s sr keV)]")
 
     # --- Corner label box ---
-    bbox_props = dict(boxstyle='round,pad=0.3', facecolor='black',
-                      edgecolor='none', alpha=0.6)
-    ax.text(0.99, 0.95, label, transform=ax.transAxes, color='white',
-            ha='right', va='top', fontsize=12, bbox=bbox_props)
+    bbox_props = dict(facecolor='white',
+                      edgecolor='none', alpha=1.0,)
+    ax.text(0.97, 0.95, label, transform=ax.transAxes, color='black',
+            ha='right', va='top', family='serif',fontsize=14, bbox=bbox_props)
     plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)
     return ax, cax
 
@@ -631,16 +725,17 @@ def plot_d1_reduced_2d(
         _, ax = plt.subplots(figsize=(6, 5))
 
     # 2) Normalize vg_2d units: reducer expects m/s; display uses km/s
-    vg_ms_for_reduce = None
-    xylim_kms = (-500.0, 500.0)  # default display limits in km/s
     if vg_2d is not None:
         vg_arr = np.asarray(vg_2d, dtype=float)
-        vg_ms_for_reduce = vg_arr * 1e3
+        vg_ms_for_reduce = vg_arr
         xylim_kms = (float(np.nanmin(vg_arr)), float(np.nanmax(vg_arr)))
-
+    else:
+        vg_arr = np.linspace(-500.0, 500.0, 500)
+        xylim_kms = (-500.0, 500.0)  # default display limits in km/s
+        
     # 3) Perform reduction
     f2d = maven.static.reduced_d1_2d(
-        d1, mso_axis1, mso_axis2, species, vg_2d=vg_ms_for_reduce,
+        d1, mso_axis1, mso_axis2, species, vg_2d=vg_arr,
         correct_background = correct_background,
         correct_vsc = correct_vsc
     )
@@ -690,11 +785,11 @@ def plot_d1_reduced_2d(
     return ax, cax
 
 #%% Show the STATIC density data
-def plot_d1_flux(ax,
-                  tint,
-                  yscale: str = "log",
-                  markersize: float = 7.0,
-                  linewidth: float = 1.0,):
+def plot_d1_flux(ax,tint,yscale: str = "log",
+                 markersize: float = 7.0,
+                 linewidth: float = 1.0,
+                 correct_bkg: bool = False,
+                 ):
     """
     Plot MAVEN STATIC ion densities (H+, O+, O2+) over time.
 
@@ -719,12 +814,22 @@ def plot_d1_flux(ax,
         _, ax = plt.subplots(figsize=(10, 5))
     tint_new = pyrf.extend_tint(tint, [-16.0, 16.0])
     d1 = maven.get_data(tint_new, "static_d1")
-    moment_h = maven.static.moments_d1(d1, "H", Emin=0, Emax=30000,
-                                       correct_background=True, correct_vsc=True)
-    moment_o = maven.static.moments_d1(d1, "O", Emin=0, Emax=30000,
-                                       correct_background=True, correct_vsc=True)
-    moment_o2 = maven.static.moments_d1(d1, "O2", Emin=0, Emax=30000,
-                                        correct_background=True, correct_vsc=True)
+
+    if correct_bkg:
+        moment_h = maven.static.moments_d1(d1, "H", Emin=0, Emax=30000,
+                                           correct_background=True, correct_vsc=True)
+        moment_o = maven.static.moments_d1(d1, "O", Emin=0, Emax=30000,
+                                           correct_background=True, correct_vsc=True)
+        moment_o2 = maven.static.moments_d1(d1, "O2", Emin=0, Emax=30000,
+                                            correct_background=True, correct_vsc=True)
+    else:
+        moment_h = maven.static.moments_d1(d1, "H", Emin=0, Emax=30000,
+                                           correct_background=False, correct_vsc=True)
+        moment_o = maven.static.moments_d1(d1, "O", Emin=0, Emax=30000,
+                                           correct_background=False, correct_vsc=True)
+        moment_o2 = maven.static.moments_d1(d1, "O2", Emin=0, Emax=30000,
+                                            correct_background=False, correct_vsc=True)
+
     Vt_h = norm(moment_h["V"].data).reshape(-1)
     Vt_o = norm(moment_o["V"].data).reshape(-1)
     Vt_o2 = norm(moment_o2["V"].data).reshape(-1)
@@ -768,7 +873,7 @@ def plot_swea_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     ax, cax = plot_spectr(ax, swea, yscale="log", cscale="log",
                           cmap=cmap, clim=clim)
     plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)
-    ax.set_ylabel("$SWEA$\n$E_e$ [eV]")
+    ax.set_ylabel("SWEA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=12)
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     ax.set_ylim([3, 3000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
@@ -776,7 +881,8 @@ def plot_swea_omni(ax, tint, cmap = 'Spectral_r', clim=None):
 
 
 #%% Show the SWEA epad data
-def plot_swea_pad(ax, tint, energyrange = [100.0, 1000.0],cmap = 'Spectral_r', option="norm"):
+def plot_swea_pad(ax, tint, energyrange = [100.0, 1000.0],cmap = 'Spectral_r',
+                  option="norm"):
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -807,7 +913,41 @@ def plot_swea_pad(ax, tint, energyrange = [100.0, 1000.0],cmap = 'Spectral_r', o
     else:
         label_str = f"{e1/1000:.1f}–{e2/1000:.1f} keV"
     plot.add_text(ax, label_str, 0.98, 0.98, color = 'white', facecolor = 'gray')
-    return ax
+    return ax, cax
+#%% Show the SWEA resample epad data
+def plot_swea_resample_pad(ax, filename, tint, energyrange = [100.0, 1000.0],cmap = 'Spectral_r', option="norm"):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+    swea_pad = maven.swea.read_resample_pad(filename, tint)
+    # Merge over energy range to get PAD(time, pitchangle)
+    pad_range = vdf.pitchangle_merge_energy(
+        swea_pad,
+        energyrange=energyrange,
+        option = option
+    )
+
+    # Plot PAD
+    if option == "norm":
+        ax, cax = plot_spectr(ax, pad_range, cmap=cmap, clim=[0.5, 1.5], shading='gouraud')
+        cax.set_ylabel("Norm(DEF)")
+    else:
+        ax, cax = plot_spectr(ax, pad_range, cscale="log", cmap=cmap, shading='gouraud')
+        cax.set_ylabel("DEF\n[keV/(cm$^2$·s·sr·keV)]")
+
+    cax = plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.015)
+    ax.set_ylabel("SWEA" +"\n"+ "PAD [$^\\circ$]")
+    ax.set_ylim([0, 180])
+    ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+
+    e1, e2 = energyrange
+    if e2 < 1000:
+        label_str = f"{e1:.0f}–{e2:.0f} eV"
+    else:
+        label_str = f"{e1/1000:.1f}–{e2/1000:.1f} keV"
+    plot.add_text(ax, label_str, 0.98, 0.98, color = 'white', facecolor = 'black',
+                  fontsize=13)
+    return ax, cax
 
 #%%
 def plot_crustal_field_map(ax=None, option: str = "Bt"):
@@ -843,8 +983,11 @@ def plot_crustal_field_map(ax=None, option: str = "Bt"):
     return ax
 
 if __name__ == "__main__":
-    tint = ["2015-09-21T13:00", "2015-09-21T16:00"]
+    filename = r'D:\Work_Work\Mars\MAVEN\HCS_to_FB\20250615_113000_20250615_123000.cdf'
+    # Define a time interval to test slicing
+    tint = ["2025-06-15T11:30:00", "2025-06-15T12:30:00"]
     # plot_sta_c6(None, tint,['O+','O2+'])
     # plot_crustal_field_map(None)
-    plot_d1_flux(None, tint, yscale="log", markersize=8.0)
+    # plot_d1_flux(None, tint, yscale="log", markersize=8.0)
+    plot_swea_resample_pad(None, filename, tint)
     plt.show()

@@ -18,8 +18,6 @@ from .int_sph_dist import int_sph_dist
 
 def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
     r"""Reduces (integrates) 3D distribution to 1D (line) or 2D (plane).
-    Draft do not use!!
-
     Parameters
     ----------
     vdf : xarray.Dataset

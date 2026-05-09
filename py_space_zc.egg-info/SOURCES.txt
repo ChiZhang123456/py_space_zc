@@ -34,7 +34,6 @@ py_space_zc/pressure.py
 py_space_zc/read_time_from_file.py
 py_space_zc/resample_time.py
 py_space_zc/rotate_tensor.py
-py_space_zc/setup.py
 py_space_zc/smooth.py
 py_space_zc/time_convert.py
 py_space_zc/time_eval.py

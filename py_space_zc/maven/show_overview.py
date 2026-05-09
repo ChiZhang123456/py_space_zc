@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from py_space_zc import maven, plot
-import matplotlib.patches as patches
 
 
 DEFAULT_PANELS = ["sta_H", "sta_O", "sta_O2", "swia_omni", "swea_omni", "B"]
@@ -189,7 +188,7 @@ def _plot_trajectory(ax_left, tint):
     _, _, c2 = plot.scatter_time(
         ax_left[1], Pmvn[:, 1], Pmvn[:, 2], t_mvn,
         cmap="Spectral_r", size=5.0, min_nticks=3, zorder=20)
-    ax_left[1].add_patch(patches.Circle((0, 0), radius=1, color="black", alpha=0.45, zorder=5))
+    maven.plot_mars(ax_left[1], texture=True, alpha=1.0, zorder=5)
     plot.set_axis(
         ax_left[1], xlim=(-4.0, 4.0), ylim=(-4.0, 4.0),
         tick_fontsize=12, label_fontsize=14,

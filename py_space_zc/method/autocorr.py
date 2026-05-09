@@ -66,8 +66,8 @@ def autocorr(inp, plot=False, demean=False):
 
     # 5. Conditional Plotting
     if plot:
-        plt.rcParams['font.family'] = 'sans-serif'
-        plt.rcParams['font.sans-serif'] = ['Graphik'] + plt.rcParams['font.sans-serif']
+        plt.rcParams['font.family'] = 'serif'
+        plt.rcParams['font.serif'] = ['Times New Roman']
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -86,12 +86,12 @@ def autocorr(inp, plot=False, demean=False):
             t_coh = lag_time[idx_e]
             ax.axvline(t_coh, color='tab:red', linestyle=':', linewidth=1.5)
             ax.text(t_coh * 1.1, 0.8, f'Coherence Time: {t_coh:.1f} s',
-                    color='tab:red', fontweight='bold', family='Graphik')
+                    color='tab:red', fontweight='bold', family='serif')
 
         # Aesthetics
-        ax.set_xlabel('Lag Time (s)', fontsize=14, family='Graphik')
-        ax.set_ylabel('ACF', fontsize=14, family='Graphik')
-        ax.set_title('Autocorrelation Analysis', fontsize=16, family='Graphik', fontweight='bold')
+        ax.set_xlabel('Lag Time (s)', fontsize=14, family='serif')
+        ax.set_ylabel('ACF', fontsize=14, family='serif')
+        ax.set_title('Autocorrelation Analysis', fontsize=16, family='serif', fontweight='bold')
         ax.grid(True, which='both', linestyle='--', alpha=0.5)
 
         # Focus on the relevant part (first 25% of the total duration)

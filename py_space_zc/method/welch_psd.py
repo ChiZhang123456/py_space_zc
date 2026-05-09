@@ -440,11 +440,7 @@ def psd_welch(
 
     if plot:
         plt.rcParams.update(
-            {
-                "font.family": "sans-serif",
-                "font.sans-serif": ["Graphik"] + plt.rcParams["font.sans-serif"],
-                "mathtext.fontset": "stix",
-            }
+            {"font.family": "serif", "font.serif": ["Times New Roman"], "mathtext.fontset": "stix"}
         )
         fig, axes = plt.subplots(2, 2, figsize=(12, 9), dpi=100)
         ax_comp_psd, ax_total_psd = axes[0]

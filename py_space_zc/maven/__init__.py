@@ -59,12 +59,15 @@ from .plot_data import (
     plot_B,
     plot_B_high,
     plot_B_mse,
+    plot_swia_density,
+    plot_swia_velocity,
     plot_swia_omni,
     plot_swia_pad,
     plot_swia_reduced_1d,
     plot_swia_reduced_2d,
     plot_swia_vpar_perp,
     plot_swea_omni,
+    plot_swea_topo,
     plot_swea_pad,
     plot_swea_resample_pad,
     plot_sta_c6,
@@ -134,12 +137,15 @@ __all__ = [
     "plot_B",
     "plot_B_high",
     "plot_B_mse",
+    "plot_swia_density",
+    "plot_swia_velocity",
     "plot_swia_omni",
     "plot_swia_pad",
     "plot_swia_reduced_1d",
     "plot_swia_reduced_2d",
     "plot_swia_vpar_perp",
     "plot_swea_omni",
+    "plot_swea_topo",
     "plot_swea_pad",
     "plot_swea_resample_pad",
     "plot_sta_c6",
@@ -171,4 +177,3 @@ __all__ = [
 __author__ = "Chi Zhang"
 __email__ = "zhangchi9508@gmail.com"
 __license__ = "MIT"
-

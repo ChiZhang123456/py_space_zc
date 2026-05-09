@@ -18,6 +18,7 @@ Functions include:
 - `plot_swea_omni`: SWEA omnidirectional electron spectra.
 - `plot_swea_pad`: SWEA pitch angle distribution over a defined energy range.
 - 'plot_swea_resample_pad': SWEA resampled pitch angle distribution over a defined energy range.
+- `plot_swea_topo`: SWEA magnetic topology index.
 - `plot_crustal_field_map`: Draw Mars crustal magnetic field contour map from Langlais model.
 """
 
@@ -39,34 +40,45 @@ plt.rcParams['mathtext.fontset'] = 'stix'
 # Fix the "missing minus sign" hyphen issue in Times New Roman
 plt.rcParams['axes.unicode_minus'] = False
 # Optional: Set global font size if needed
-# plt.rcParams['font.size'] = 12
+plt.rcParams['font.size'] = 14
 
 #%% Show the Bmso data (1Hz)
-def plot_B(ax, tint):
+def plot_B(ax, tint, show_legend=True, legend_fontsize=14, linewidth=1.2, ylabel_fontsize=14):
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
     tint_new = pyrf.extend_tint(tint, [-5.0, 5.0])
     B = maven.get_data(tint_new, "B")
-    plot_line(ax, B["Bmso"])
-    ax.set_ylabel(r"$B_{\mathrm{MSO}}\ (\mathrm{nT})$")
+    plot_line(ax, B["Bmso"], linewidth=linewidth)
+    plot_line(ax, pyrf.norm(B["Bmso"]), color='gray', linewidth=linewidth, label=r"$|B|$")
+    ax.set_ylabel(r"$B_{\mathrm{MSO}}\ (\mathrm{nT})$", fontsize=ylabel_fontsize)
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    if show_legend:
+        ax.legend([r"$Bx$", r"$By$", r"$Bz$", r"$|B|$"],
+                  loc="center left",
+                  bbox_to_anchor=(1.01, 0.5),
+                  frameon=False,
+                  fontsize=legend_fontsize,
+                  handlelength=1.0)
     return ax
 
-#%% Show the Bmso data (32Hz)
-def plot_B_high(ax, tint):
+
+# %% Show the Bmso data (32Hz)
+def plot_B_high(ax, tint, show_legend=True, legend_fontsize=14, linewidth=1.2, ylabel_fontsize=14):
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 5))
     tint_new = pyrf.extend_tint(tint, [-5.0, 5.0])
     B = maven.get_data(tint_new, "B_high")
-    plot_line(ax, B["Bmso"])
-    ax.set_ylabel(r"$B_{\mathrm{MSO}}\ (\mathrm{nT})$")
-    ax.legend(["$B_x$", "$B_y$", "$B_z$", r"$|\mathbf{B}|$"],
-              loc='upper right', bbox_to_anchor=(1.2, 1), ncol=1,
-              handlelength=2, frameon=False)
+    plot_line(ax, B["Bmso"], linewidth=linewidth)
+    ax.set_ylabel(r"$B_{\mathrm{MSO}}\ (\mathrm{nT})$", fontsize=ylabel_fontsize)
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
-    ax.text(0.02, 0.95, 'MAVEN', transform=ax.transAxes, fontsize=12,
-            ha='left', va='top', weight='bold',
-            bbox=dict(boxstyle="round,pad=0.3", facecolor='gray', edgecolor='none'))
+    if show_legend:
+        ax.legend(["$B_x$", "$B_y$", "$B_z$", r"$|\mathbf{B}|$"],
+                  loc='upper right',
+                  bbox_to_anchor=(1.2, 1),
+                  ncol=1,
+                  handlelength=2,
+                  frameon=False,
+                  fontsize=legend_fontsize)
     return ax
 
 #%% Show the Bmse data (1Hz)
@@ -81,9 +93,36 @@ def plot_B_mse(ax, tint):
               loc='upper right', bbox_to_anchor=(1.2, 1), ncol=1,
               handlelength=2, frameon=False)
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
-    ax.text(0.02, 0.95, 'MAVEN', transform=ax.transAxes, fontsize=12,
-            ha='left', va='top', weight='bold',
-            bbox=dict(boxstyle="round,pad=0.3", facecolor='gray', edgecolor='none'))
+    return ax
+
+#%% Show SWIA density
+def plot_swia_density(ax, tint, linewidth=1.2, ylabel_fontsize=14):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+    tint_new = pyrf.extend_tint(tint, [-5.0, 5.0])
+    swia_omni = maven.get_data(tint_new, "swia_omni")
+    plot_line(ax, swia_omni["N"], linewidth=linewidth, label=r"$N_{swia}$",
+              marker='.', markersize=4)
+    ax.set_ylabel(r"$N\ (\mathrm{cm}^{-3})$", fontsize=ylabel_fontsize)
+    ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    return ax
+
+#%% Show SWIA Velocity
+def plot_swia_velocity(ax, tint, show_legend=True, legend_fontsize=12, linewidth=1.2, ylabel_fontsize=14):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+    tint_new = pyrf.extend_tint(tint, [-5.0, 5.0])
+    swia_omni = maven.get_data(tint_new, "swia_omni")
+    plot_line(ax, swia_omni["Vmso"], linewidth=linewidth,)
+    ax.set_ylabel(r"$V_{\mathrm{MSO}}\ (\mathrm{km/s})$", fontsize=ylabel_fontsize)
+    ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    if show_legend:
+        ax.legend([r"$V_x$", r"$V_y$", r"$V_z$"],
+                  loc="center left",
+                  bbox_to_anchor=(1.01, 0.5),
+                  frameon=False,
+                  fontsize=legend_fontsize,
+                  handlelength=1.0)
     return ax
 
 #%% Show the SWIA omni data
@@ -100,7 +139,7 @@ def plot_swia_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     else:
         ax, cax = plot_spectr(ax, swia["omni_flux"], yscale="log", cscale="log",
                               cmap=cmap, clim=clim)
-    ax.set_ylabel("SWIA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=12)
+    ax.set_ylabel("SWIA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=14)
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     ax.set_ylim([25, 20000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
@@ -878,6 +917,35 @@ def plot_swea_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     ax.set_ylim([3, 3000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
     return ax, cax
+
+
+#%% Show the SWEA magnetic topology index data
+def plot_swea_topo(ax, tint, markersize=5.0):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 3))
+
+    topo = maven.get_data(tint, "swea_topo")
+    index_map = topo.attrs.get(
+        "index_map",
+        {0: "unknown", 1: "C-D", 2: "C-X", 3: "C-T", 4: "C-V", 5: "O-D", 6: "O-N", 7: "DP"},
+    )
+
+    ax.plot(
+        topo.time.data,
+        topo.data,
+        linestyle="None",
+        marker="o",
+        markersize=markersize,
+        markerfacecolor="none",
+        markeredgecolor="tab:purple",
+    )
+    ax.set_yticks(list(index_map.keys()))
+    ax.set_yticklabels([index_map[k] for k in index_map.keys()])
+    ax.set_ylim([-0.5, 7.5])
+    ax.set_ylabel("SWEA\nTopo")
+    ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    ax.grid(alpha=0.25)
+    return ax
 
 
 #%% Show the SWEA epad data

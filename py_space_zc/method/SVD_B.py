@@ -3,7 +3,7 @@ from pyrfu import pyrf
 from py_space_zc import background_B, plot, ts_vec_xyz
 
 def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
-          m_width_coeff = 1):
+          m_width_coeff=2):
     """
     Perform Singular Value Decomposition (SVD)-based polarization analysis of
     magnetic field fluctuations using the `pyrfu.ebsp` routine.
@@ -27,6 +27,12 @@ def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
     freq_range : list of float, optional (default=[0.1, 16.0])
         Frequency range (in Hz) over which to perform the polarization analysis.
         Used to limit the output of `ebsp`.
+    m_width_coeff : int or float, optional (default=2)
+        Coefficient applied to the Morlet wavelet width in `pyrfu.ebsp`.
+        It also increases the number of logarithmically spaced frequency bins
+        used by `ebsp`, approximately 12 * m_width_coeff bins per decade.
+        Larger values improve frequency resolution and can help separate
+        harmonics, but reduce time resolution and increase computation time.
 
     Returns
     -------

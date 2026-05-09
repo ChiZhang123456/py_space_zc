@@ -58,7 +58,7 @@ def ts_skymap(time, data, energy, phi, theta, **kwargs):
 
     # Handle optional parameters
     energy0 = kwargs.get("energy0", energy[0, :] if energy.ndim == 2 else energy)
-    energy1 = kwargs.get("energy1", energy[1, :] if energy.ndim == 2 else energy)
+    energy1 = kwargs.get("energy1", energy[0, :] if energy.ndim == 2 else energy)
     esteptable = kwargs.get("esteptable", np.zeros(n_time, dtype=np.uint8))
     attrs = kwargs.get("attrs", {})
     glob_attrs = kwargs.get("glob_attrs", {})

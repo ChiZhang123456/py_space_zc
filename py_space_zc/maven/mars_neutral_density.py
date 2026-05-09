@@ -1,29 +1,47 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def mars_neutral_density(alt_m, case='issi_solar_max'):
     """
-    Compute neutral densities (H, O, CO2) on Mars for a given solar condition
-    using multi-exponential empirical models.
+    Compute neutral densities in the Martian atmosphere or exosphere.
 
     Parameters
     ----------
     alt_m : float or ndarray
         Altitude in meters.
     case : str
-        Solar activity case:
-        'solarmin', 'solarmod', 'solarmax', or 'issi_solar_max', 'issi_solar_min'
-        'solarmin', 'solarmod', 'solarmax' cases are somewhat unreliable
+        Neutral density case.
+        Use 'ra', 'rahmati', or 'rahmati_exosphere' for the H and O exosphere
+        profile stored in Rahmati_exosphere.txt. This reproduces the data
+        lookup in mars_exosphere.m. Only H and O are available for this case.
+        Use 'issi_solar_max' or 'issi_solar_min' for the ISSI model.
+        Use 'solarmin', 'solarmod', or 'solarmax' for the older empirical
+        models. These cases are somewhat unreliable.
 
     Returns
     -------
+    nH, nO : ndarray
+        Returned for case='ra'. Neutral hydrogen and oxygen exosphere
+        densities [m^-3].
     nH, nO, nCO2 : ndarray
-        Neutral hydrogen, oxygen, and CO2 densities [m^-3].
+        Returned for other cases. Neutral hydrogen, oxygen, and CO2 densities
+        [m^-3].
+
+    Examples
+    --------
+    >>> nH, nO = mars_neutral_density(4000e3, case='ra')
+    >>> nH, nO, nCO2 = mars_neutral_density(400e3, case='issi_solar_max')
     """
 
     # Convert altitude from meters → kilometers
+    case = case.lower()
+
     alt_km = np.asarray(alt_m) / 1000.0
+
+    if case in ("ra", "rahmati", "rahmati_exosphere"):
+        return _rahmati_exosphere_density(alt_km)
 
     # Standard multi-exponential neutral profiles (cm^-3, scale heights in km)
     profiles = {
@@ -87,7 +105,7 @@ def mars_neutral_density(alt_m, case='issi_solar_max'):
 
     # If not ISSI model, must be in profiles dict
     if case not in profiles:
-        raise ValueError("Invalid case. Choose 'solarmin', 'solarmod', 'solarmax', or 'issi_solar_max', 'issi_solar_min'")
+        raise ValueError("Invalid case. Choose 'ra', 'solarmin', 'solarmod', 'solarmax', 'issi_solar_max', or 'issi_solar_min'")
 
     # Retrieve empirical parameters
     p = profiles[case]
@@ -108,31 +126,111 @@ def mars_neutral_density(alt_m, case='issi_solar_max'):
     return nH, nO, nCO2
 
 
+def _rahmati_exosphere_density(alt_km):
+    """
+    Return H and O exosphere densities from Rahmati_exosphere.txt.
+
+    The table stores altitude in km and density in cm^-3. The returned
+    densities are converted to m^-3 to keep the unit convention of
+    mars_neutral_density. Linear interpolation and extrapolation are used to
+    match MATLAB interp1(..., 'linear', 'extrap').
+    """
+    filename = os.path.join(os.path.dirname(__file__), "Rahmati_exosphere.txt")
+    data = np.loadtxt(filename, ndmin=2)
+
+    h_good = np.isfinite(data[:, 0]) & np.isfinite(data[:, 1])
+    o_good = np.isfinite(data[:, 2]) & np.isfinite(data[:, 3])
+
+    alt_H = data[h_good, 0]
+    nH_cm3 = data[h_good, 1]
+    alt_O = data[o_good, 2]
+    nO_cm3 = data[o_good, 3]
+
+    nH = _interp_linear_extrap(alt_km, alt_H, nH_cm3) * 1e6
+    nO = _interp_linear_extrap(alt_km, alt_O, nO_cm3) * 1e6
+
+    return nH, nO
+
+
+def _interp_linear_extrap(x, xp, fp):
+    x_arr = np.asarray(x, dtype=float)
+    scalar_input = x_arr.ndim == 0
+    x_work = np.atleast_1d(x_arr)
+
+    xp = np.asarray(xp, dtype=float).reshape(-1)
+    fp = np.asarray(fp, dtype=float).reshape(-1)
+    order = np.argsort(xp)
+    xp = xp[order]
+    fp = fp[order]
+
+    if xp.size < 2:
+        raise ValueError("The exosphere profile must contain at least two points.")
+
+    out = np.interp(x_work, xp, fp)
+    low = x_work < xp[0]
+    high = x_work > xp[-1]
+    out[low] = fp[0] + (x_work[low] - xp[0]) * (fp[1] - fp[0]) / (xp[1] - xp[0])
+    out[high] = fp[-1] + (x_work[high] - xp[-1]) * (fp[-1] - fp[-2]) / (
+        xp[-1] - xp[-2]
+    )
+
+    if scalar_input:
+        return float(out[0])
+    return out
+
+
 # =====================================================================
 #                      PLOT COMPARISON: ISSI vs SOLARMAX
 # =====================================================================
 if __name__ == '__main__':
-    alt = np.linspace(0, 1000e3, 2000)
+    # 将高度扩展到 5000 km，以观察外逸层 H 和 O 的分布
+    alt = np.linspace(100e3, 5000e3, 1000)
+    alt_km = alt / 1000.0
 
+    # 获取三种模型的数据
     nH_smax, nO_smax, nCO2_smax = mars_neutral_density(alt, "solarmax")
     nH_issi, nO_issi, nCO2_issi = mars_neutral_density(alt, "issi_solar_max")
 
-    fig, ax = plt.subplots(1, 3, figsize=(15, 7), sharey=True)
+    # 注意：Rahmati 模型只返回 nH, nO。这里假设文件存在，如果不存在请跳过此步
+    try:
+        nH_ra, nO_ra = mars_neutral_density(alt, "ra")
+        has_ra = True
+    except:
+        print("Warning: Rahmati_exosphere.txt not found. Skipping RA model.")
+        has_ra = False
 
-    species = ["CO2", "O", "H"]
-    solarmax_profiles = [nCO2_smax, nO_smax, nH_smax]
-    issi_profiles     = [nCO2_issi, nO_issi, nH_issi]
+    fig, ax = plt.subplots(1, 3, figsize=(16, 7), sharey=True)
 
-    for i in range(3):
-        ax[i].semilogx(solarmax_profiles[i], alt/1000, label="solarmax", lw=2)
-        ax[i].semilogx(issi_profiles[i], alt/1000, label="ISSI solar max", lw=2, ls="--")
+    # 1. CO2 比较 (通常 Rahmati 没有 CO2)
+    ax[0].semilogx(nCO2_smax, alt_km, label="Standard SolarMax", lw=2)
+    ax[0].semilogx(nCO2_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
+    ax[0].set_xlabel("$CO_2$ Density [m$^{-3}$]")
+    ax[0].set_xlim(1e6, 1e20)  # CO2 在低层大气浓度极高
 
-        ax[i].set_xlabel(f"{species[i]} density [m$^{{-3}}$]")
-        ax[i].grid(True, which="both", ls="--", alpha=0.4)
-        ax[i].set_xlim(1e0, 1e14)
+    # 2. Oxygen (O) 比较
+    ax[1].semilogx(nO_smax, alt_km, label="Standard SolarMax", lw=2)
+    ax[1].semilogx(nO_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
+    if has_ra:
+        ax[1].semilogx(nO_ra, alt_km, label="Rahmati (RA)", lw=2, ls="-.")
+    ax[1].set_xlabel("O Density [m$^{-3}$]")
+    ax[1].set_xlim(1e4, 1e16)
 
+    # 3. Hydrogen (H) 比较
+    ax[2].semilogx(nH_smax, alt_km, label="Standard SolarMax", lw=2)
+    ax[2].semilogx(nH_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
+    if has_ra:
+        ax[2].semilogx(nH_ra, alt_km, label="Rahmati (RA)", lw=2, ls="-.")
+    ax[2].set_xlabel("H Density [m$^{-3}$]")
+    ax[2].set_xlim(1e4, 1e12)
+
+    # 格式美化
     ax[0].set_ylabel("Altitude [km]")
-    fig.suptitle("Comparison: Standard Solar-Max vs ISSI Solar-Max Neutral Profiles")
-    fig.legend(loc="upper right")
-    plt.tight_layout()
+    for a in ax:
+        a.grid(True, which="both", ls="--", alpha=0.5)
+        a.set_ylim(100, 5000)
+
+    fig.suptitle("Comparison of Mars Neutral Models (Solar Max Conditions)", fontsize=16)
+    ax[2].legend(loc="upper right", frameon=True)
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()

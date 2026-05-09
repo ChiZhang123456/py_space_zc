@@ -31,9 +31,33 @@ from .create_pdist_skymap import create_pdist_skymap
 from .maxwellian_distribution import _1d as maxwellian_1d
 from .maxwellian_distribution import _2d as maxwellian_2d
 from .maxwellian_distribution import _3d as maxwellian_3d
+from .maxwellian_distribution import _bi_2d as bi_maxwellian_2d
+from .maxwellian_distribution import _bi_3d as bi_maxwellian_3d
 from .generate_maxwellian_3d import generate_maxwellian_3d
+from .kappa_distribution import _1d as kappa_1d
+from .kappa_distribution import _3d as kappa_3d
+from .kappa_distribution import _bi as bi_kappa
 from .flux_convert import flux_convert
+from .omni_def2psd import omni_def2psd
 from .rebin_omni import rebin_omni
+from .fit_omni_1d import energy_to_speed as energy_to_speed_1d
+from .fit_omni_1d import maxwellian_omni_1d_model
+from .fit_omni_1d import kappa_omni_1d_model
+from .fit_omni_1d import fit_omni_1d
+from .fit_omni_1d import fit_maxwellian_omni_1d
+from .fit_omni_1d import fit_kappa_omni_1d
+from .fit_2d_bi_psd import bi_maxwellian_2d_psd_model
+from .fit_2d_bi_psd import bi_kappa_2d_psd_model
+from .fit_2d_bi_psd import fit_2d_bi_psd
+from .fit_bi_kappa import energy_to_speed_kms
+from .fit_bi_kappa import energy_pitchangle_to_vpara_vperp
+from .fit_bi_kappa import bi_kappa_energy_pa_model
+from .fit_bi_kappa import fit_bi_kappa_energy_pa
+from .fit_bi_kappa import fit_bi_kappa
+from .fit_bi_kappa import plot_bi_kappa_fit
+from .fit_3d_psd import maxwellian_3d_psd_model
+from .fit_3d_psd import kappa_3d_psd_model
+from .fit_3d_psd import fit_3d_psd
 
 # === Monte Carlo VDF Sampling ===
 from .Monte_Carlo_vdf import _mc_cart_3d as mc_3d
@@ -58,7 +82,9 @@ __all__ = [
     "vxyz_from_polar",
     "get_particle_mass_charge",
     "flux_convert",
+    "omni_def2psd",
     "rebin_omni",
+    "energy_to_speed_1d",
 
     # Plasma Moments and Distributions
     "moments_calculation",
@@ -70,7 +96,29 @@ __all__ = [
     "maxwellian_1d",
     "maxwellian_2d",
     "maxwellian_3d",
+    "bi_maxwellian_2d",
+    "bi_maxwellian_3d",
     "generate_maxwellian_3d",
+    "kappa_1d",
+    "kappa_3d",
+    "bi_kappa",
+    "maxwellian_omni_1d_model",
+    "kappa_omni_1d_model",
+    "fit_omni_1d",
+    "fit_maxwellian_omni_1d",
+    "fit_kappa_omni_1d",
+    "bi_maxwellian_2d_psd_model",
+    "bi_kappa_2d_psd_model",
+    "fit_2d_bi_psd",
+    "energy_to_speed_kms",
+    "energy_pitchangle_to_vpara_vperp",
+    "bi_kappa_energy_pa_model",
+    "fit_bi_kappa_energy_pa",
+    "fit_bi_kappa",
+    "plot_bi_kappa_fit",
+    "maxwellian_3d_psd_model",
+    "kappa_3d_psd_model",
+    "fit_3d_psd",
 
     # Monte Carlo VDF Sampling
     "mc_3d",

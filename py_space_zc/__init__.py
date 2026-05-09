@@ -72,7 +72,7 @@ from .hybrid_alfven_speed import hybrid_alfven_speed
 # -----------------------------------------------------------------------------
 # Submodules
 # -----------------------------------------------------------------------------
-from . import maven, emm, vdf, mercury, vlasitor, ionization, tianwen_1, plot, method, jupiter, sputtering, vex
+from . import maven, emm, vdf, mercury, ionization, tianwen_1, plot, method, jupiter, sputtering, vex
 
 # -----------------------------------------------------------------------------
 # Metadata
@@ -121,6 +121,6 @@ __all__ = [
     'hybrid_alfven_speed',
 
     # Submodules
-    "maven", "emm", "vdf", "mercury", "vlasitor", "ionization",
+    "maven", "emm", "vdf", "mercury", "ionization",
     "tianwen_1", "plot", "method", "jupiter", "sputtering", "vex",
 ]

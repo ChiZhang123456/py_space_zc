@@ -5,8 +5,8 @@ from .gyro_information import gyro_information
 import pyrfu.pyrf as pyrf
 import numpy as np
 
-def plot_Bwave_svd(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.05, 16.0], 
-                   tint_focus=None):
+def plot_Bwave_svd(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.05, 16.0],
+                   m_width_coeff=2, tint_focus=None):
     """
     Perform SVD analysis on Magnetic Field data and plot wave parameters.
 
@@ -20,6 +20,12 @@ def plot_Bwave_svd(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.05, 16
         The overlap between windows in seconds. Default is 10.0.
     freq_range : list, optional
         The frequency range [min, max] to analyze and plot. Default is [0.05, 16.0].
+    m_width_coeff : int or float, optional
+        Coefficient applied to the Morlet wavelet width in `SVD_B`.
+        Larger values produce a denser frequency grid, approximately
+        12 * m_width_coeff bins per decade, which can help resolve harmonics.
+        This improves frequency resolution at the cost of time resolution and
+        computation speed. Default is 2.
     tint_focus : list of str or np.datetime64, optional
         The time interval for the X-axis focus (e.g., ["2025-06-16T13:05", "2025-06-16T14:00"]).
         If None, it defaults to the full range of Bwave.
@@ -52,7 +58,8 @@ def plot_Bwave_svd(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.05, 16
     wave_res = method.SVD_B(Bwave,
                             window_length=window_length,
                             overlap=overlap,
-                            freq_range=freq_range)
+                            freq_range=freq_range,
+                            m_width_coeff=m_width_coeff)
     
     # Calculate derived parameters
     B_all = wave_res['Bperp'] + wave_res['Bpara']

@@ -43,7 +43,8 @@ def get_data(tint, var):
         SWEA (Solar Wind Electron Analyzer):
         - 'swea_omni'   : Omnidirectional electron spectra (.cdf)
         - 'swea_pad'    : Electron pitch angle distribution (.cdf)
-        - 'swea_topo'   : SWEA top-hat field of view topography (.mat)
+        - 'swea_topo'   : SWEA magnetic topology index (.txt)
+        - 'topo'        : Alias of 'swea_topo'
         - 'swea_scpot'  : SWEA-LPW spacecraft potential (.mat)
 
         STATIC (Suprathermal and Thermal Ion Composition):
@@ -55,6 +56,9 @@ def get_data(tint, var):
         - 'static_d1_iv4'   : STATIC D1 background counts (.cdf)
         - 'static_density'  : Derived ion density from STATIC (Gwen's txt format)
         - 'static_moment'   : Derived ion moments from STATIC D1 mode (.mat from Chi Zhang)
+
+        Key parameters:
+        - 'kp'              : MAVEN key parameters from MATLAB .mat files
 
     Returns
     -------
@@ -78,6 +82,8 @@ def get_data(tint, var):
 
               
     # Define base path for MAVEN data
+    if var == 'topo':
+        var = 'swea_topo'
     base_path_mvn = get_base_path() 
     start_time, end_time = np.datetime64(tint[0]), np.datetime64(tint[1])
 
@@ -111,8 +117,8 @@ def get_data(tint, var):
         'swea_pad':{'path': os.path.join(base_path_mvn, 'swe', 'l2'),
                       'filename_format': 'mvn_swe_l2_svypad_{date}_*.cdf'},
 
-        'swea_topo': {'path': os.path.join(base_path_mvn, 'swe', 'l3',),
-                     'filename_format': 'topo_{date}.mat'},
+        'swea_topo': {'path': os.path.join(base_path_mvn, 'swe', 'l3', 'topology_index_txt'),
+                     'filename_format': 'topo_{date}.txt'},
 
         'swea_scpot': {'path': os.path.join(base_path_mvn, 'swe', 'l3','swea_lpw_pot_mat'),
                       'filename_format': 'swea_scpot_{date}.mat'},
@@ -140,6 +146,9 @@ def get_data(tint, var):
 
         'static_moment': {'path': os.path.join(base_path_mvn, 'sta', 'l3','moments_d1_ChiZhang'),
                            'filename_format': 'moments_d1_{date}.mat'},
+
+        'kp': {'path': os.path.join(base_path_mvn, 'kp', 'matlab_data_kp'),
+               'filename_format': '{date}_kp.mat'},
     }
     
     config = data_config.get(var)
@@ -150,6 +159,62 @@ def get_data(tint, var):
     dates_to_read = np.arange(start_time.astype('datetime64[D]'), 
                               end_time.astype('datetime64[D]') + np.timedelta64(1, 'D'),
                               dtype='datetime64[D]')
+
+    # %% read MAVEN key parameter data
+    if var == 'kp':
+        scalar_fields = {
+            'GEO_LAT': {'name': 'Geographic latitude', 'UNITS': 'deg'},
+            'GEO_LON': {'name': 'Geographic longitude', 'UNITS': 'deg'},
+            'Local_time': {'name': 'Local time', 'UNITS': 'hour'},
+            'Ls': {'name': 'Solar longitude', 'UNITS': 'deg'},
+            'MS_distance': {'name': 'Mars-Sun distance', 'UNITS': 'AU'},
+            'Subsolar_Lat': {'name': 'Subsolar latitude', 'UNITS': 'deg'},
+            'Subsolar_Lon': {'name': 'Subsolar longitude', 'UNITS': 'deg'},
+            'SWEA_ne': {'name': 'SWEA electron density', 'UNITS': 'cm^-3'},
+            'SWEA_Te': {'name': 'SWEA electron temperature', 'UNITS': 'eV'},
+            'SWEA_ne_quality': {'name': 'SWEA electron density quality'},
+            'SWEA_Te_quality': {'name': 'SWEA electron temperature quality'},
+        }
+        res = {'time': np.array([], dtype='datetime64[ns]')}
+        for field in scalar_fields:
+            res[field] = np.array([], dtype=float)
+
+        for date_file in dates_to_read:
+            filename = os.path.join(
+                config['path'],
+                config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d')),
+            )
+            if not os.path.exists(filename):
+                continue
+            mat_data = loadmat(filename)
+            time_array = np.asarray(irf_time(mat_data['time'], "datenum>datetime64")).squeeze()
+            n_sample = time_array.size
+            for field in scalar_fields:
+                if field in mat_data:
+                    n_sample = min(n_sample, np.asarray(mat_data[field]).squeeze().size)
+            time_array = time_array[:n_sample]
+            day_mask = (time_array >= np.datetime64(start_time)) & (time_array <= np.datetime64(end_time))
+            res['time'] = np.concatenate((res['time'], time_array[day_mask]))
+            for field in scalar_fields:
+                if field in mat_data:
+                    values = np.asarray(mat_data[field]).squeeze()[:n_sample]
+                    res[field] = np.concatenate((res[field], values[day_mask]))
+                else:
+                    res[field] = np.concatenate((res[field], np.full(np.count_nonzero(day_mask), np.nan)))
+
+        time = res.pop('time')
+        return {
+            field: ts_scalar(
+                time,
+                values,
+                attrs={
+                    "name": scalar_fields[field].get('name', field),
+                    "instrument": "MAVEN KP",
+                    **{key: val for key, val in scalar_fields[field].items() if key != 'name'},
+                },
+            )
+            for field, values in res.items()
+        }
 
     #%% read the magnetic field (1Hz), mso
     if var == 'B':    
@@ -196,12 +261,16 @@ def get_data(tint, var):
             if os.path.exists(filename):
                 mat_data = loadmat(filename)
                 time_array = irf_time(mat_data['time'],"datenum>datetime64")
+                n_sample = min(time_array.shape[0], mat_data['Bmso'].shape[0], mat_data['Pmso'].shape[0])
+                time_array = time_array[:n_sample]
+                bmso = mat_data['Bmso'][:n_sample, :]
+                pmso = mat_data['Pmso'][:n_sample, :]
 
                 # select the data within the interval
                 mask = (time_array >= np.datetime64(start_time)) & (time_array <= np.datetime64(end_time))
                 res['time'] = np.concatenate((res['time'], time_array[mask]))
-                res['Bmso'] = np.vstack((res['Bmso'], mat_data['Bmso'][np.squeeze(mask),:]))
-                res['Pmso'] = np.vstack((res['Pmso'], mat_data['Pmso'][np.squeeze(mask),:]))
+                res['Bmso'] = np.vstack((res['Bmso'], bmso[np.squeeze(mask),:]))
+                res['Pmso'] = np.vstack((res['Pmso'], pmso[np.squeeze(mask),:]))
                 
                 # convert the data to TSeries
         B = ts_vec_xyz(res['time'], res['Bmso'], attrs={"name": "Magnetic field",
@@ -363,7 +432,7 @@ def get_data(tint, var):
                 "name": "SWIA_omni_eflux",  # 可选元信息
                 "Instrument": "SWIA",
                 "UNITS": "keV/(cm^2 s sr keV)",
-            }
+                "species":"H+",}
         )
 
         res = {'N':N,
@@ -526,11 +595,56 @@ def get_data(tint, var):
                 "name": "SWEA_omni_eflux",
                 "Instrument": "SWEA",
                 "UNITS": "keV/(cm^2 s sr keV)",
+                "species":"e",
             }
         )
         return swea
 
-    # %% read the SWEA omni data
+    # %% read the SWEA magnetic topology index data
+    elif var == 'swea_topo':
+        res = {
+            'time': np.array([], dtype='datetime64[ns]'),
+            'topology': np.array([], dtype=float),
+        }
+
+        for date_file in dates_to_read:
+            filename = os.path.join(
+                config['path'],
+                config['filename_format'].format(date=date_file.astype('O').strftime('%Y%m%d'))
+            )
+            if os.path.exists(filename):
+                data_txt = np.loadtxt(filename, dtype=str)
+                if data_txt.ndim == 1 and data_txt.size >= 2:
+                    data_txt = data_txt.reshape(1, -1)
+                time_str = np.char.replace(data_txt[:, 0], '/', 'T')
+                time_array = time_str.astype('datetime64[ns]')
+                topo_array = data_txt[:, 1].astype(float)
+
+                mask = (time_array >= np.datetime64(start_time)) & (time_array <= np.datetime64(end_time))
+                res['time'] = np.concatenate((res['time'], time_array[mask]))
+                res['topology'] = np.concatenate((res['topology'], topo_array[mask].astype(float)))
+
+        topo = ts_scalar(
+            time=res['time'],
+            data=res['topology'],
+            attrs={
+                "name": "SWEA_topology_index",
+                "Instrument": "SWEA",
+                "index_map": {
+                    0: "unknown",
+                    1: "C-D",
+                    2: "C-X",
+                    3: "C-T",
+                    4: "C-V",
+                    5: "O-D",
+                    6: "O-N",
+                    7: "DP",
+                },
+            }
+        )
+        return topo
+
+    # %% read the SWEA spacecraft potential data
     elif var == 'swea_scpot':
         res = {'time': np.array([], dtype='datetime64[ns]'),
                'scpot': np.array([], dtype=float),}

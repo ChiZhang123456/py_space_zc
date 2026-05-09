@@ -18,6 +18,3 @@ spacepy
 spiceypy
 tqdm
 xarray
-
-[vlasiator]
-pyvlasiator

@@ -23,6 +23,4 @@ SOFTWARE.
 Portions of this software are adapted from the following open-source projects:
 
 - pyrfu (https://github.com/louis-richard/irfu-python), licensed under the MIT License
-- pyvlasiator (https://github.com/henry2004y/pyvlasiator), licensed under the MIT License
-
 Their original licenses and attributions are retained where applicable.

@@ -33,8 +33,6 @@ Requires-Dist: spacepy
 Requires-Dist: spiceypy
 Requires-Dist: tqdm
 Requires-Dist: xarray
-Provides-Extra: vlasiator
-Requires-Dist: pyvlasiator; extra == "vlasiator"
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier
@@ -43,7 +41,6 @@ Dynamic: description-content-type
 Dynamic: home-page
 Dynamic: license
 Dynamic: license-file
-Dynamic: provides-extra
 Dynamic: requires-dist
 Dynamic: requires-python
 Dynamic: summary
@@ -81,18 +78,6 @@ pip install git+https://github.com/ChiZhang123456/py_space_zc.git --extra-index-
 ```
 
 If `pymagglobal` is already installed, the normal GitHub install command is sufficient.
-
-For Chi Zhang's local Mars conda environment:
-
-```powershell
-C:\Users\Win\.conda\envs\mars\python.exe -m pip install git+https://github.com/ChiZhang123456/py_space_zc.git --extra-index-url https://<GFZ_USER>:<GFZ_TOKEN>@git.gfz-potsdam.de/api/v4/projects/1055/packages/pypi/simple
-```
-
-Optional Vlasiator support can be installed with:
-
-```bash
-pip install "py_space_zc[vlasiator] @ git+https://github.com/ChiZhang123456/py_space_zc.git"
-```
 
 ## Dependencies
 

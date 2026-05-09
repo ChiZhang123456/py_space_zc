@@ -24,6 +24,5 @@ setup(
                       "spiceypy",
                       "pyrfu",
                       'pyshtools',
-                      'pyvlasiator',
                       'xarray',],
 )

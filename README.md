@@ -32,18 +32,6 @@ pip install git+https://github.com/ChiZhang123456/py_space_zc.git --extra-index-
 
 If `pymagglobal` is already installed, the normal GitHub install command is sufficient.
 
-For Chi Zhang's local Mars conda environment:
-
-```powershell
-C:\Users\Win\.conda\envs\mars\python.exe -m pip install git+https://github.com/ChiZhang123456/py_space_zc.git --extra-index-url https://<GFZ_USER>:<GFZ_TOKEN>@git.gfz-potsdam.de/api/v4/projects/1055/packages/pypi/simple
-```
-
-Optional Vlasiator support can be installed with:
-
-```bash
-pip install "py_space_zc[vlasiator] @ git+https://github.com/ChiZhang123456/py_space_zc.git"
-```
-
 ## Dependencies
 
 Core dependencies are declared in `setup.py`. They include:

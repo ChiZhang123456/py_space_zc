@@ -57,9 +57,6 @@ setup(
         "tqdm",
         "xarray",
     ],
-    extras_require={
-        "vlasiator": ["pyvlasiator"],
-    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",

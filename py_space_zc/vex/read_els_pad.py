@@ -71,7 +71,7 @@ def read_els_pad(filename):
 
 
 if __name__ == '__main__':
-    filename = r"C:\Users\Win\Downloads\VExELSPADRG_2006135_Data.csv"
+    filename = r"path\to\VExELSPADRG_2006135_Data.csv"
     time, energy_matrix, pa, pad_3d = read_els_pad(filename)
 
     print("Time shape:", time.shape)

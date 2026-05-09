@@ -4,7 +4,8 @@ import matplotlib.dates as mdates
 
 def scatter_time(ax=None, x=None, y=None, time=None,
                  cmap='Spectral_r', size=15,
-                 min_nticks=3, start_on_top=False):
+                 min_nticks=3, start_on_top=False,
+                 zorder=None, **kwargs):
     """
     Scatter with a time-colored colorbar.
 
@@ -24,6 +25,10 @@ def scatter_time(ax=None, x=None, y=None, time=None,
         Minimum number of colorbar ticks (>=3). Start & end included.
     start_on_top : bool
         If True, put the start time at the top of the colorbar.
+    zorder : float or None
+        Drawing order for the scatter points.
+    **kwargs
+        Additional keyword arguments forwarded to matplotlib.axes.Axes.scatter.
 
     Returns
     -------
@@ -46,8 +51,12 @@ def scatter_time(ax=None, x=None, y=None, time=None,
     vmin = mdates.date2num(time_dt[0])
     vmax = mdates.date2num(time_dt[-1])
 
+    kwargs.setdefault("edgecolors", "none")
+    if zorder is not None:
+        kwargs["zorder"] = zorder
+
     sc = ax.scatter(x, y, c=time_num, s=size, cmap=cmap,
-                    edgecolors='none', vmin=vmin, vmax=vmax)
+                    vmin=vmin, vmax=vmax, **kwargs)
 
     # ---- colorbar ----
     cbar = plt.colorbar(sc, ax=ax, fraction=0.04, pad=0.005, aspect=14)

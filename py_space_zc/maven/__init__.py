@@ -80,6 +80,7 @@ from .plot_data import (
 
 )
 from .show_path_xr import show_path_xr
+from .mars_disk import plot_mars
 
 # -----------------------------------------------------------------------------
 # Model boundaries & diagnostics
@@ -95,6 +96,7 @@ from .get_vsc_mso import get_vsc_mso
 from .frac_dis import frac_dis
 from .bs_normal_theta import bs_normal_theta
 from .mvn_swia_region_id import mvn_swia_region_id
+from .bow_shock_connection import bow_shock_connection, bs_theta_bn_dist
 
 # -----------------------------------------------------------------------------
 # Public API
@@ -156,6 +158,7 @@ __all__ = [
     "plot_sta_dens",
     "plot_d1_flux",
     "show_path_xr",
+    "plot_mars",
 
     # boundaries & diagnostics
     "bs_mpb",
@@ -169,6 +172,8 @@ __all__ = [
     "bs_normal_theta",
     "bs_normal",
     "mvn_swia_region_id",
+    "bow_shock_connection",
+    "bs_theta_bn_dist",
 ]
 
 # -----------------------------------------------------------------------------

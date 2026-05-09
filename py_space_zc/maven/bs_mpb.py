@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
+
+from .mars_disk import plot_mars
 
 # =========================================================
 # Boundary Function: Bow Shock (BS) and MPB
@@ -17,7 +20,11 @@ def bs_mpb(
     mars_night_color='#333333',  # Darker gray for nightside
     mars_color='red',        # Color if sphere=False
     mars_lw=1.5,
-    mars_ls='--'
+    mars_ls='--',
+    mars_texture=True,       # Use a real Mars disk image when sphere=True
+    mars_texture_path=None,
+    mars_texture_alpha=1.0,
+    mars_texture_zorder=2,
 ):
     """
     Plots Martian boundaries (BS and MPB) based on empirical models.
@@ -79,14 +86,24 @@ def bs_mpb(
 
     # --- 3. Draw Mars Sphere ---
     if sphere:
-        # Dayside semi-circle
-        theta_day = np.linspace(-np.pi/2, np.pi/2, 500)
-        ax.fill(np.cos(theta_day), np.sin(theta_day),
-                color=mars_day_color, zorder=2)
-        # Nightside semi-circle
-        theta_night = np.linspace(np.pi/2, 3*np.pi/2, 500)
-        ax.fill(np.cos(theta_night), np.sin(theta_night),
-                color=mars_night_color, zorder=2)
+        if mars_texture:
+            if mars_texture_path is None:
+                mars_texture_path = Path(__file__).with_name("mars_globe_true_color.png")
+            plot_mars(
+                ax,
+                texture_path=mars_texture_path,
+                alpha=mars_texture_alpha,
+                zorder=mars_texture_zorder,
+            )
+        else:
+            # Dayside semi-circle
+            theta_day = np.linspace(-np.pi/2, np.pi/2, 500)
+            ax.fill(np.cos(theta_day), np.sin(theta_day),
+                    color=mars_day_color, zorder=2)
+            # Nightside semi-circle
+            theta_night = np.linspace(np.pi/2, 3*np.pi/2, 500)
+            ax.fill(np.cos(theta_night), np.sin(theta_night),
+                    color=mars_night_color, zorder=2)
     else:
         # Simple circular outline
         theta = np.linspace(0, 2*np.pi, 500)

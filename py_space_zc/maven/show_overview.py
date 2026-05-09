@@ -143,6 +143,23 @@ _PANEL_PLOTTERS = {
 }
 
 
+def _apply_times_font(fig, fontname="Times New Roman"):
+    """Force all axes, titles, labels, ticks, colorbars, and legends to use one font."""
+    for ax in fig.axes:
+        ax.title.set_fontname(fontname)
+        ax.xaxis.label.set_fontname(fontname)
+        ax.yaxis.label.set_fontname(fontname)
+        ax.xaxis.get_offset_text().set_fontname(fontname)
+        ax.yaxis.get_offset_text().set_fontname(fontname)
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            label.set_fontname(fontname)
+
+        legend = ax.get_legend()
+        if legend is not None:
+            for text in legend.get_texts():
+                text.set_fontname(fontname)
+
+
 def _normalize_panels(panels):
     if panels is None:
         return DEFAULT_PANELS.copy()
@@ -245,5 +262,7 @@ def show_overview(tint, panels=None):
         if i < n_panels - 1:
             ax.set_xlabel("")
         plot.set_axis(ax, fontsize=12, tick_fontsize=12, label_fontsize=13, grid=False)
+
+    _apply_times_font(fig)
 
     return fig

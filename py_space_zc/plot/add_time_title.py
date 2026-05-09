@@ -76,6 +76,7 @@ def add_time_title(ax, tint, format: str = "yyyy/mm/dd HH:MM - HH:MM", **kwargs)
         title = ts.strftime(left_fmt)
 
     # Apply title
+    kwargs.setdefault("fontname", "Times New Roman")
     ax.set_title(title, **kwargs)
 
 

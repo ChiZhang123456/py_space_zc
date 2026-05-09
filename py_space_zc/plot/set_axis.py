@@ -59,6 +59,7 @@ def set_axis(
     which_spines: Iterable[str] = ("left", "bottom", "right", "top"),
     tick_color: Optional[str] = None,
     tick_width: Optional[float] = None,
+    fontname: str = "Times New Roman",
 ):
     """
     Set common axis properties in a concise way, similar to MATLAB's set(gca, ...) style.
@@ -135,6 +136,8 @@ def set_axis(
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
+    ax.xaxis.label.set_fontname(fontname)
+    ax.yaxis.label.set_fontname(fontname)
 
     # Font sizes
     if fontsize is not None:
@@ -170,7 +173,7 @@ def set_axis(
 
     # Title
     if title is not None:
-        ax.set_title(title, fontsize=title_fontsize)
+        ax.set_title(title, fontsize=title_fontsize, fontname=fontname)
 
     # Spines (axis lines)
     if spine_color is not None or spine_width is not None:
@@ -214,6 +217,10 @@ def set_axis(
             label.set_fontsize(formatter_fontsize)
         for label in ax.get_yticklabels():
             label.set_fontsize(formatter_fontsize)
+
+    for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontname(fontname)
+    ax.title.set_fontname(fontname)
 
 
 # Example (optional)

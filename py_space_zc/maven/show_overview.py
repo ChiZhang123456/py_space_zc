@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.text import Text
 from py_space_zc import maven, plot
 
 
@@ -143,6 +144,18 @@ _PANEL_PLOTTERS = {
 }
 
 
+def _configure_times_font(fontname="Times New Roman"):
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = [fontname] + [
+        name for name in plt.rcParams["font.serif"] if name != fontname
+    ]
+    plt.rcParams["mathtext.fontset"] = "custom"
+    plt.rcParams["mathtext.rm"] = fontname
+    plt.rcParams["mathtext.it"] = f"{fontname}:italic"
+    plt.rcParams["mathtext.bf"] = f"{fontname}:bold"
+    plt.rcParams["axes.unicode_minus"] = False
+
+
 def _apply_times_font(fig, fontname="Times New Roman"):
     """Force all axes, titles, labels, ticks, colorbars, and legends to use one font."""
     for ax in fig.axes:
@@ -158,6 +171,9 @@ def _apply_times_font(fig, fontname="Times New Roman"):
         if legend is not None:
             for text in legend.get_texts():
                 text.set_fontname(fontname)
+
+    for text in fig.findobj(match=Text):
+        text.set_fontname(fontname)
 
 
 def _normalize_panels(panels):
@@ -205,7 +221,7 @@ def _plot_trajectory(ax_left, tint):
     _, _, c2 = plot.scatter_time(
         ax_left[1], Pmvn[:, 1], Pmvn[:, 2], t_mvn,
         cmap="Spectral_r", size=5.0, min_nticks=3, zorder=20)
-    maven.plot_mars(ax_left[1], texture=True, alpha=1.0, zorder=5)
+    maven.plot_mars(ax_left[1], texture=True, alpha=1.0, zorder=30)
     plot.set_axis(
         ax_left[1], xlim=(-4.0, 4.0), ylim=(-4.0, 4.0),
         tick_fontsize=12, label_fontsize=14,
@@ -239,6 +255,8 @@ def show_overview(tint, panels=None):
     >>> maven.show_overview(tint, ["B", "swia_omni"])
     >>> maven.show_overview(tint, ["B", "swia_omni", "swea_omni", "swia_density"])
     """
+    _configure_times_font()
+
     panel_names = _normalize_panels(panels)
     n_panels = len(panel_names)
     fig_height = max(6.0, 1.25 * n_panels + 1.2)

@@ -16,7 +16,7 @@ def subplot(
         sharey: bool = False,
 ):
     """
-    Create subplots with a 2D axes array return and global Times New Roman font.
+    Create subplots with a 2D axes array return and global Graphik font.
 
     Parameters
     ----------
@@ -47,10 +47,10 @@ def subplot(
     """
 
     # --- 1. Global Font Configuration ---
-    # Set default font to Times New Roman
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
-    # Ensure minus signs display correctly with Times New Roman
+    # Set default font to Graphik.
+    plt.rcParams['font.family'] = 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Graphik'] + plt.rcParams['font.sans-serif']
+    # Ensure minus signs display correctly.
     plt.rcParams['axes.unicode_minus'] = False
 
     if nrows < 1 or ncols < 1:

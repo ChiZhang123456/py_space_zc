@@ -34,10 +34,10 @@ from typing import Union, Iterable, Tuple, Optional
 from pyrfu import pyrf
 
 # --- Global Figure Configuration ---
-plt.rcParams["font.family"] = "serif"
-plt.rcParams["font.serif"] = ["Times New Roman"] + plt.rcParams["font.serif"]
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Graphik"] + plt.rcParams["font.sans-serif"]
 plt.rcParams['mathtext.fontset'] = 'stix'
-# Fix the "missing minus sign" hyphen issue in Times New Roman
+# Fix the "missing minus sign" hyphen issue.
 plt.rcParams['axes.unicode_minus'] = False
 # Optional: Set global font size if needed
 plt.rcParams['font.size'] = 14
@@ -139,7 +139,7 @@ def plot_swia_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     else:
         ax, cax = plot_spectr(ax, swia["omni_flux"], yscale="log", cscale="log",
                               cmap=cmap, clim=clim)
-    ax.set_ylabel("SWIA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=14)
+    ax.set_ylabel("SWIA" + "\n" + "E [eV]", fontname='Graphik', fontsize=14)
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     ax.set_ylim([25, 20000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
@@ -514,7 +514,7 @@ def plot_sta_c6(ax, tint, species, clim=None, cmap = 'Spectral_r',correct_backgr
     bbox_props = dict(facecolor='white',
                       edgecolor='none', alpha=1.0,)
     ax.text(0.97, 0.95, label, transform=ax.transAxes, color='black',
-            ha='right', va='top', family='serif',fontsize=14, bbox=bbox_props)
+            ha='right', va='top', family='Graphik', fontsize=14, bbox=bbox_props)
     plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)
     return ax, cax
 
@@ -912,7 +912,7 @@ def plot_swea_omni(ax, tint, cmap = 'Spectral_r', clim=None):
     ax, cax = plot_spectr(ax, swea, yscale="log", cscale="log",
                           cmap=cmap, clim=clim)
     plot.adjust_colorbar(ax, cax, 0.005, height_ratio=0.6, width=0.010)
-    ax.set_ylabel("SWEA" + "\n" + "E [eV]", fontname='Times New Roman', fontsize=12)
+    ax.set_ylabel("SWEA" + "\n" + "E [eV]", fontname='Graphik', fontsize=12)
     cax.set_ylabel("DEF\n[keV/(cm$^2$ s sr keV)]")
     ax.set_ylim([3, 3000])
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))

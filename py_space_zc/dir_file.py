@@ -2,7 +2,7 @@
 """
 Created on Mon Sep  9 12:21:04 2024
 
-@author: Win
+Author: Chi Zhang
 """
 
 import os
@@ -10,23 +10,26 @@ import glob
 
 def dir_file(folder_path: str, filename: str, recursive: bool = False, case_sensitive: bool = True) -> list:
     """
-    在指定文件夹中搜索匹配指定文件名模式的文件。
+    Search for files matching a filename pattern in a folder.
 
-    参数:
+    Parameters
+    ----------
     folder_path : str
-        要搜索的文件夹路径。
+        Folder path to search.
     filename : str
-        要搜索的文件名或模式。支持通配符 * 和 ?。
-    recursive : bool, 可选
-        是否递归搜索子文件夹。默认为 False。
-    case_sensitive : bool, 可选
-        搜索是否区分大小写。默认为 True。
+        Filename or pattern to search for. Wildcards such as * and ? are supported.
+    recursive : bool, optional
+        Whether to search subfolders recursively. Default is False.
+    case_sensitive : bool, optional
+        Whether the search should be case-sensitive. Default is True.
 
-    返回:
+    Returns
+    -------
     list
-        匹配的文件路径列表。
+        Matching file paths.
 
-    示例:
+    Examples
+    --------
     >>> dir_file('/path/to/folder', '*.txt')
     ['/path/to/folder/file1.txt', '/path/to/folder/file2.txt']
 
@@ -36,41 +39,41 @@ def dir_file(folder_path: str, filename: str, recursive: bool = False, case_sens
     >>> dir_file('/path/to/folder', 'README.md', case_sensitive=False)
     ['/path/to/folder/readme.md']
     """
-    # 构建搜索模式
+    # Build the search pattern.
     pattern = os.path.join(folder_path, '**' if recursive else '', filename)
 
-    # 设置搜索选项
+    # Select the search function.
     search_options = glob.glob
     if not case_sensitive:
-        search_options = glob.iglob  # iglob 支持不区分大小写的搜索
+        search_options = glob.iglob
 
-    # 执行搜索
+    # Execute the search.
     if recursive:
         results = search_options(pattern, recursive=True)
     else:
         results = search_options(pattern)
 
-    # 转换结果为列表并返回
+    # Return results as a list.
     return list(results)
 
-# 使用示例
+# Example usage
 if __name__ == "__main__":
-    # 示例 1：搜索当前目录中的所有 .py 文件
-    print("示例 1: 搜索当前目录中的所有 .py 文件")
+    # Example 1: search for all .py files in the current directory.
+    print("Example 1: search for all .py files in the current directory")
     py_files = dir_file('.', '*.py')
-    print(f"找到的 .py 文件: {py_files}\n")
+    print(f"Found .py files: {py_files}\n")
 
-    # 示例 2：递归搜索指定目录中的所有 .txt 文件
-    print("示例 2: 递归搜索指定目录中的所有 .txt 文件")
+    # Example 2: recursively search for all .txt files in a directory.
+    print("Example 2: recursively search for all .txt files in a directory")
     txt_files = dir_file('/path/to/documents', '*.txt', recursive=True)
-    print(f"找到的 .txt 文件: {txt_files}\n")
+    print(f"Found .txt files: {txt_files}\n")
 
-    # 示例 3：不区分大小写搜索 README 文件
-    print("示例 3: 不区分大小写搜索 README 文件")
+    # Example 3: case-insensitive search for README files.
+    print("Example 3: case-insensitive search for README files")
     readme_files = dir_file('/path/to/project', 'README.md', case_sensitive=False)
-    print(f"找到的 README 文件: {readme_files}\n")
+    print(f"Found README files: {readme_files}\n")
 
-    # 示例 4：搜索特定命名模式的文件
-    print("示例 4: 搜索特定命名模式的文件")
+    # Example 4: search for a specific filename pattern.
+    print("Example 4: search for a specific filename pattern")
     data_files = dir_file('/path/to/data', 'data_20??.csv')
-    print(f"找到的数据文件: {data_files}")
+    print(f"Found data files: {data_files}")

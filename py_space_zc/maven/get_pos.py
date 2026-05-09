@@ -81,7 +81,7 @@ def get_lon_lat(Pmso):
     Ppc = coords_convert(Pmso, "mso2pc")
     lon, lat, radius = pyrf.cart2sph(Ppc.data[:,0], Ppc.data[:,1], Ppc.data[:,2])
     # lon : 0-2pi
-    # lat: 0-pi, 从+Z轴旋转到-Z轴，但是实际上是 90，到-90
+    # lat is returned as colatitude from +Z to -Z, then converted to latitude.
     lon, lat = np.degrees(lon), np.degrees(lat)
     lon[lon <= 0] += 360 
     lat = 90 - lat

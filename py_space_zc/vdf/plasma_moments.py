@@ -1,10 +1,11 @@
 """
-Adapted from pyrfu's ts_skymap module:
-(https://github.com/louis-richard/irfu-python), licensed under the MIT License.
+Adapted from pyrfu (https://github.com/louis-richard/irfu-python),
+licensed under the MIT License.
 
-Original code licensed under the MIT License.
-Modified by Chi Zhang for compatibility with py_space_zc and to include
-spacecraft velocity correction in the velocity moments calculation.
+Author: Chi Zhang
+Source note: this file is based on pyrfu VDF moment routines and was modified
+for py_space_zc, including spacecraft velocity correction in the velocity
+moments calculation.
 """
 
 import numpy as np
@@ -36,11 +37,11 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
         Same shape as PSD.
 
     phimat : ndarray
-        Azimuthal angle φ [deg].
+        Azimuthal angle phi [deg].
         Same shape as PSD.
 
     thetamat : ndarray
-        Polar angle θ [deg], defined as the angle between v and +Z axis.
+        Polar angle theta [deg], defined as the angle between v and +Z axis.
         Same shape as PSD.
 
     dphimat : ndarray
@@ -62,14 +63,14 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
     -------
     dict
         Plasma moments:
-        - 'n'   : number density [cm⁻³]
+        - 'n'   : number density [cm^-3]
         - 'V'   : bulk velocity vector [km/s]
         - 'Pressure' : thermal pressure tensor [nPa]
         - 'P2'  : total pressure tensor (dynamic + thermal) [nPa]
         - 'Temp': temperature tensor [eV]
-        - 'H'   : enthalpy flux vector [erg/s/cm²]
-        - 'Q'   : heat flux vector [erg/s/cm²]
-        - 'K'   : kinetic energy flux vector [erg/s/cm²]
+        - 'H'   : enthalpy flux vector [erg/s/cm^2]
+        - 'Q'   : heat flux vector [erg/s/cm^2]
+        - 'K'   : kinetic energy flux vector [erg/s/cm^2]
     """
 
     num_time = PSD.shape[0]
@@ -84,10 +85,10 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
     dphimat = np.deg2rad(dphimat)
     dthetamat = np.deg2rad(dthetamat)
 
-    # 3. Compute velocity magnitude from kinetic energy: E = 0.5 m v²
+    # 3. Compute velocity magnitude from kinetic energy: E = 0.5 m V^2
     Vt = np.sqrt(2 * energymat * qe / pmass)                  # [m/s]
     Vt_upper = np.sqrt(2 * (energymat + dEmat) * qe / pmass)  # [m/s]
-    dvmat = Vt_upper - Vt                                     # Δv per bin [m/s]
+    dvmat = Vt_upper - Vt                                     # dv per bin [m/s]
 
     # 4. Convert spherical velocities to Cartesian components
     #    NOTE: theta = angle from +Z axis
@@ -101,10 +102,10 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
     Vy += vsc[:, 1, None, None, None]
     Vz += vsc[:, 2, None, None, None]
 
-    # 5. Velocity space volume element: d³v = v² sinθ dv dΩ
-    d3v = Vt**2 * np.sin(thetamat) * dvmat * dphimat * dthetamat  # [m³/s³]
+    # 5. Velocity space volume element: d3v = v^2 sin(theta) dv dOmega.
+    d3v = Vt**2 * np.sin(thetamat) * dvmat * dphimat * dthetamat  # [m^3/s^3]
 
-    # 6. Zeroth moment: number density [1/m³]
+    # 6. Zeroth moment: number density [1/m^3]
     n_psd = np.nansum(PSD * d3v, axis=(1, 2, 3))
 
     # 7. First moment: bulk velocity vector [m/s]
@@ -113,7 +114,7 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
     V_psd[:, 1] = np.nansum(Vy * PSD * d3v, axis=(1, 2, 3)) / n_psd
     V_psd[:, 2] = np.nansum(Vz * PSD * d3v, axis=(1, 2, 3)) / n_psd
 
-    # 8. Second moment: total momentum flux tensor P₂_ij [Pa]
+    # 8. Second moment: total momentum flux tensor P2_ij [Pa]
     P2_psd = np.zeros((num_time, 3, 3))
     P2_psd[:, 0, 0] = np.nansum(pmass * Vx * Vx * PSD * d3v, axis=(1, 2, 3))
     P2_psd[:, 0, 1] = np.nansum(pmass * Vx * Vy * PSD * d3v, axis=(1, 2, 3))
@@ -129,39 +130,39 @@ def plasma_moments(PSD, energymat, dEmat, phimat, thetamat,
     # 9. Dynamic pressure tensor: n m V_i V_j
     dynP = pmass * n_psd[:, None, None] * V_psd[:, :, None] * V_psd[:, None, :]
 
-    # 10. Thermal pressure tensor: P_th = P₂ - dynP
+    # 10. Thermal pressure tensor: P_th = P2 - dynP
     P_psd = P2_psd - dynP
 
     # 11. Temperature tensor in eV
     T_psd = np.where(n_psd[:, None, None] != 0,
                      P_psd / (n_psd[:, None, None] * kb), np.nan)
-    T_psd = T_psd * kb / qe  # [K] → [eV]
+    T_psd = T_psd * kb / qe  # [K] to [eV]
 
-    # 12. Third moment: total energy flux vector [J/m²/s]
+    # 12. Third moment: total energy flux vector [J/m^2/s]
     M2_psd = np.zeros((num_time, 3))
     M2_psd[:, 0] = np.nansum(0.5 * pmass * Vx * Vt**2 * PSD * d3v, axis=(1, 2, 3))
     M2_psd[:, 1] = np.nansum(0.5 * pmass * Vy * Vt**2 * PSD * d3v, axis=(1, 2, 3))
     M2_psd[:, 2] = np.nansum(0.5 * pmass * Vz * Vt**2 * PSD * d3v, axis=(1, 2, 3))
 
-    # 13. Kinetic energy flux: (1/2 n m V²) V
+    # 13. Kinetic energy flux: (1/2 n m V^2) V
     Vabs2 = np.sum(V_psd**2, axis=1)
     K_psd = 0.5 * pmass * n_psd[:, None] * Vabs2[:, None] * V_psd
 
-    # 14. Enthalpy flux: H_i = (trace(P)/2) V_i + Σ_j V_j P_ij
+    # 14. Enthalpy flux: H_i = (trace(P)/2) V_i + sum_j V_j P_ij
     Ptrace = P_psd[:, 0, 0] + P_psd[:, 1, 1] + P_psd[:, 2, 2]
     H_psd = np.zeros((num_time, 3))
     for i in range(3):
         H_psd[:, i] = (Ptrace / 2) * V_psd[:, i] + np.sum(V_psd * P_psd[:, i, :], axis=1)
 
-    # 15. Heat flux: Q = M₂ - K - H
+    # 15. Heat flux: Q = M2- K - H
     Q_psd = M2_psd - K_psd - H_psd
 
     # 16. Unit conversions
-    n_psd /= 1e6   # [1/m³] → [cm⁻³]
-    V_psd /= 1e3   # [m/s] → [km/s]
-    P_psd *= 1e9   # [Pa] → [nPa]
+    n_psd /= 1e6   # [1/m^3] to [cm^-3]
+    V_psd /= 1e3   # [m/s] to [km/s]
+    P_psd *= 1e9   # [Pa] to [nPa]
     P2_psd *= 1e9
-    H_psd *= 1e3   # [J/m²/s] → [erg/s/cm²]
+    H_psd *= 1e3   # [J/m^2/s] to [erg/s/cm^2]
     Q_psd *= 1e3
     K_psd *= 1e3
 

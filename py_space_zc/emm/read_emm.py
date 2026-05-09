@@ -65,42 +65,42 @@ def subtract_baseline(wavelengths, radiance):
 
 
 def get_nightside_map(filename,wavelength_limits: list):
-    # example:
-        # filename = 'D:\Work_Work\Mars\EMM\kp_paper\emm_emu_l2a_20221201t002750_0301_osr_38566_f_v04-00.fits.gz' 
-        # wavelength_limits = [130.4 - 2.0, 130.4 + 2.0]
-        # read_emm.get_nightside_map
+    # Example:
+    # filename = r"D:\Work_Work\Mars\EMM\kp_paper\emm_emu_l2a_20221201t002750_0301_osr_38566_f_v04-00.fits.gz"
+    # wavelength_limits = [130.4 - 2.0, 130.4 + 2.0]
+    # read_emm.get_nightside_map(filename, wavelength_limits)
     
-    # 使用pyfits打开FITS文件
+    # Open the FITS file.
     hdul = pyfits.open(filename)
 
-    # 从FOV_GEOM扩展中读取纬度、经度、太阳天顶角和发射角
-    lat = hdul['FOV_GEOM'].data['lat'][:,0,:]  # 纬度数据
-    lon = hdul['FOV_GEOM'].data['lon'][:,0,:]  # 经度数据
-    sza = hdul['FOV_GEOM'].data['SOLAR_Z_ANGLE'][:,0,:]  # 太阳天顶角
-    ea = hdul['FOV_GEOM'].data['EMISSION_ANGLE'][:,0,:]  # 发射角
+    # Read latitude, longitude, solar zenith angle, and emission angle.
+    lat = hdul['FOV_GEOM'].data['lat'][:,0,:]
+    lon = hdul['FOV_GEOM'].data['lon'][:,0,:]
+    sza = hdul['FOV_GEOM'].data['SOLAR_Z_ANGLE'][:,0,:]
+    ea = hdul['FOV_GEOM'].data['EMISSION_ANGLE'][:,0,:]
     
-    # print(time.columns) 就知道里面的信息，分别是time_et和time_utc
-    time = hdul['TIME'].data['TIME_UTC'] #时间
+    # The TIME extension includes both ephemeris time and UTC time.
+    time = hdul['TIME'].data['TIME_UTC']
     Pmso=hdul['SC_GEOM'].data['V_SC_POS_MSO']
     
-    # 读取辐射亮度和波长数据
-    radiance = hdul['CAL'].data['RADIANCE']  # 辐射亮度
-    wavelengths = hdul['WAVELENGTH'].data['WAVELENGTH_L2A'][0]  # 波长
+    # Read radiance and wavelength arrays.
+    radiance = hdul['CAL'].data['RADIANCE']
+    wavelengths = hdul['WAVELENGTH'].data['WAVELENGTH_L2A'][0]
 
-    # 基线校正
+    # Subtract the spectral baseline.
     baseline, corrected_radiance = subtract_baseline(wavelengths, radiance)
     
-    # 积分辐射亮度，限定在特定波长范围
+    # Integrate radiance over the requested wavelength range.
     radiance = integrate_swath_radiance(corrected_radiance, wavelengths, wavelength_limits)
 
-    # 筛选条件设置
-    szalim = 90  # 太阳天顶角限制
-    ealim = 90   # 发射角限制
-    mask = ((sza > szalim) & (ea < ealim))  # 创建掩膜，筛选有效数据
+    # Select nightside pixels with acceptable viewing geometry.
+    szalim = 90
+    ealim = 90
+    mask = ((sza > szalim) & (ea < ealim))
     
-    # 创建夜间照射区域的辐射亮度副本，并应用掩膜
+    # Apply the nightside mask to the radiance and coordinates.
     radiance_nightdisk = np.copy(radiance)
-    radiance_nightdisk[~mask] = np.nan  # 非有效区域设为NaN
+    radiance_nightdisk[~mask] = np.nan
     lat[~mask] =np.nan
     lon[~mask] =np.nan
     

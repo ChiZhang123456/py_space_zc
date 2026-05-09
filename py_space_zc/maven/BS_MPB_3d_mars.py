@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 def BS_MPB_3d_mars(ax):
-    # 绘制弓激波（Bow Shock）
+    # Plot the bow shock surface.
     thmpb = np.linspace(0, np.pi, 101)
     x0 = 0.6
     L = 2.081
@@ -25,14 +25,14 @@ def BS_MPB_3d_mars(ax):
                     edgecolor='none', shade=True)
 
 
-    # 绘制火星球体
+    # Plot the Mars sphere.
     u, v = np.mgrid[0:2*np.pi:51j, 0:np.pi:51j]
     X_sphere = np.cos(u) * np.sin(v)
     Y_sphere = np.sin(u) * np.sin(v)
     Z_sphere = np.cos(v)
     ax.plot_surface(X_sphere, Y_sphere, Z_sphere, color='k', alpha=0.3, edgecolor='none')
 
-    # 绘制MPB - 部分 1
+    # Plot MPB surface, part 1.
     x0 = 0.640
     ecc = 0.770
     L = 1.080
@@ -48,10 +48,10 @@ def BS_MPB_3d_mars(ax):
     Z_mpb0 = np.outer(rhompb0, np.sin(theta))
     X_mpb0 = np.tile(xmpb0[:, np.newaxis], (1, len(theta)))
 
-    # 注释掉的绘制指令，按需启用
+    # Plot the first MPB surface segment.
     ax.plot_surface(X_mpb0, Y_mpb0, Z_mpb0, alpha=0.2, color='blue', edgecolor='none')
 
-    # 绘制MPB - 部分 2
+    # Plot MPB surface, part 2.
     x0 = 1.600
     ecc = 1.009
     L = 0.528
@@ -67,16 +67,16 @@ def BS_MPB_3d_mars(ax):
     Z_mpb1 = np.outer(rhompb1, np.sin(theta))
     X_mpb1 = np.tile(xmpb1[:, np.newaxis], (1, len(theta)))
 
-    # 注释掉的绘制指令，按需启用
+    # Plot the second MPB surface segment.
     ax.plot_surface(X_mpb1, Y_mpb1, Z_mpb1, alpha=0.2, color='blue', edgecolor='none')
 
-    # 设置坐标范围和比例
+    # Set coordinate limits and aspect ratio.
     ax.set_xlim([-4, 2])
     ax.set_ylim([-7, 7])
     ax.set_zlim([-7, 7])
     ax.set_box_aspect([1, 1, 1])  # DataAspectRatio
 
-# 使用示例
+# Example usage
 if __name__ == '__main__':
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')

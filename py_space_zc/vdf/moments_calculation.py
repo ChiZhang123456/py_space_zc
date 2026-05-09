@@ -1,9 +1,11 @@
 """
-Adapted from pyrfu's ts_skymap module:
-(https://github.com/louis-richard/irfu-python), licensed under the MIT License.
+Adapted from pyrfu (https://github.com/louis-richard/irfu-python),
+licensed under the MIT License.
 
-Modified by Chi Zhang for compatibility with py_space_zc and to include
-spacecraft velocity correction in the velocity moments calculation.
+Author: Chi Zhang
+Source note: this file is based on pyrfu VDF moment routines and was modified
+for py_space_zc, including spacecraft velocity correction in the velocity
+moments calculation.
 """
 
 import logging
@@ -120,7 +122,7 @@ def moments_calculation(vdf, sc_pot=None, vsc_instrument=None, **kwargs):
     energy_correct = np.where(energy_correct > 0, energy_correct, np.nan)
 
     # 6. Prepare spacecraft velocity correction
-    #    vsc_instrument is converted from km/s → m/s before passing to moments
+    #    vsc_instrument is converted from km/s to m/s before passing to moments
     if vsc_instrument is None:
         vsc_instrument = np.zeros((n_time, 3), dtype=np.float64)
     else:

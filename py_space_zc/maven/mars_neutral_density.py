@@ -183,15 +183,15 @@ def _interp_linear_extrap(x, xp, fp):
 #                      PLOT COMPARISON: ISSI vs SOLARMAX
 # =====================================================================
 if __name__ == '__main__':
-    # 将高度扩展到 5000 km，以观察外逸层 H 和 O 的分布
+    # Extend altitude to 5000 km to inspect exospheric H and O distributions.
     alt = np.linspace(100e3, 5000e3, 1000)
     alt_km = alt / 1000.0
 
-    # 获取三种模型的数据
+    # Evaluate the available neutral atmosphere models.
     nH_smax, nO_smax, nCO2_smax = mars_neutral_density(alt, "solarmax")
     nH_issi, nO_issi, nCO2_issi = mars_neutral_density(alt, "issi_solar_max")
 
-    # 注意：Rahmati 模型只返回 nH, nO。这里假设文件存在，如果不存在请跳过此步
+    # The Rahmati model returns only nH and nO. Skip it if the file is unavailable.
     try:
         nH_ra, nO_ra = mars_neutral_density(alt, "ra")
         has_ra = True
@@ -201,13 +201,13 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 7), sharey=True)
 
-    # 1. CO2 比较 (通常 Rahmati 没有 CO2)
+    # 1. CO2 comparison. The Rahmati model usually does not include CO2.
     ax[0].semilogx(nCO2_smax, alt_km, label="Standard SolarMax", lw=2)
     ax[0].semilogx(nCO2_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
     ax[0].set_xlabel("$CO_2$ Density [m$^{-3}$]")
-    ax[0].set_xlim(1e6, 1e20)  # CO2 在低层大气浓度极高
+    ax[0].set_xlim(1e6, 1e20)  # CO2 is very dense in the lower atmosphere.
 
-    # 2. Oxygen (O) 比较
+    # 2. Oxygen (O) comparison.
     ax[1].semilogx(nO_smax, alt_km, label="Standard SolarMax", lw=2)
     ax[1].semilogx(nO_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
     if has_ra:
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     ax[1].set_xlabel("O Density [m$^{-3}$]")
     ax[1].set_xlim(1e4, 1e16)
 
-    # 3. Hydrogen (H) 比较
+    # 3. Hydrogen (H) comparison.
     ax[2].semilogx(nH_smax, alt_km, label="Standard SolarMax", lw=2)
     ax[2].semilogx(nH_issi, alt_km, label="ISSI SolarMax", lw=2, ls="--")
     if has_ra:
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     ax[2].set_xlabel("H Density [m$^{-3}$]")
     ax[2].set_xlim(1e4, 1e12)
 
-    # 格式美化
+    # Plot formatting.
     ax[0].set_ylabel("Altitude [km]")
     for a in ax:
         a.grid(True, which="both", ls="--", alpha=0.5)

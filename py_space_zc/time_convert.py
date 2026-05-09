@@ -2,7 +2,10 @@
 """
 Created on Mon Sep  9 09:52:16 2024
 
-@author: Win
+Author: Chi Zhang
+
+Some conversion routines follow the behavior and conventions used by
+`pyrfu.pyrf`, then were modified for py_space_zc compatibility.
 """
 
 import numpy as np
@@ -15,37 +18,40 @@ import re
 #%%
 def datenum2datetime64(matlab_datenum):
     """
-    将MATLAB的datenum格式转换为numpy的datetime64[ns]格式
+    Convert MATLAB datenum values to numpy datetime64[ns].
     
-    参数:
-    matlab_datenum : float, int, list, 或 numpy数组
-        MATLAB格式的日期数值
+    Parameters
+    ----------
+    matlab_datenum : float, int, list, or numpy.ndarray
+        MATLAB datenum values.
     
-    返回:
-    numpy.datetime64[ns] 或 包含datetime64[ns]的numpy数组
+    Returns
+    -------
+    numpy.datetime64[ns] or numpy.ndarray
+        Converted datetime64 values.
     """
     
-    # 确保输入是numpy数组
+    # Ensure the input is a numpy array.
     matlab_datenum = np.atleast_1d(np.array(matlab_datenum, dtype=float))
     
-    # MATLAB datenum的起始日期是0000年1月1日，而Python的datetime是从1年1月1日开始
-    # 因此需要减去719529天来调整这个差异
+    # MATLAB datenum uses a different epoch. 719529 is the MATLAB datenum
+    # corresponding to 1970-01-01.
     days_from_matlab_base = matlab_datenum - 719529
     
-    # 转换为timedelta（以纳秒为单位）
+    # Convert the time offset to nanoseconds.
     seconds_from_base = days_from_matlab_base * 24 * 3600
     nanoseconds_from_base = seconds_from_base * 1e9
     
-    # 使用astype直接转换为timedelta64[ns]
+    # Convert directly to timedelta64[ns].
     timedelta_from_base = nanoseconds_from_base.astype('timedelta64[ns]')
     
-    # 1970-01-01 是numpy datetime64的起始日期
+    # numpy datetime64 epoch.
     numpy_base = np.datetime64('1970-01-01')
     
-    # 计算最终的datetime64
+    # Calculate the final datetime64 value.
     result = numpy_base + timedelta_from_base
 
-    # 如果输入是标量，返回标量结果
+    # Preserve scalar output when the input is scalar.
     if result.size == 1:
         return result[0]
     return result
@@ -54,28 +60,32 @@ def datenum2datetime64(matlab_datenum):
 #%%
 def datetime642datenum(datetime64_arr):
     """
-    将numpy的datetime64[ns]格式转换为MATLAB的datenum格式
+    Convert numpy datetime64[ns] values to MATLAB datenum.
     
-    参数:
-    datetime64_arr : numpy.datetime64[ns], 或包含datetime64[ns]的numpy数组
+    Parameters
+    ----------
+    datetime64_arr : numpy.datetime64[ns] or numpy.ndarray
+        Input datetime64 values.
     
-    返回:
-    float 或 包含float的numpy数组,表示MATLAB格式的日期数值
+    Returns
+    -------
+    float or numpy.ndarray
+        MATLAB datenum values.
     """
     
-    # 确保输入是numpy数组
+    # Ensure the input is a numpy array.
     datetime64_arr = np.atleast_1d(datetime64_arr)
     
-    # 将datetime64[ns]转换为自1970-01-01以来的纳秒数
+    # Convert datetime64[ns] to nanoseconds since 1970-01-01.
     nanoseconds_from_1970 = datetime64_arr.astype('datetime64[ns]').astype(np.int64)
     
-    # 转换为天数
+    # Convert nanoseconds to days.
     days_from_1970 = nanoseconds_from_1970 / (24 * 3600 * 1e9)
     
-    # MATLAB datenum的起始日期是0000年1月1日，而1970-01-01在MATLAB中的datenum是719529
+    # 1970-01-01 corresponds to MATLAB datenum 719529.
     matlab_datenum = days_from_1970 + 719529
     
-    # 如果输入是标量，返回标量结果
+    # Preserve scalar output when the input is scalar.
     if matlab_datenum.size == 1:
         return matlab_datenum[0]
     return matlab_datenum
@@ -212,24 +222,24 @@ def iso86012datetime64(time):
 
 #%%
 def datetime642et(dt64):
-    # 确保输入是 numpy datetime64 类型
+    # Ensure the input is numpy datetime64 data.
     if not isinstance(dt64, (np.datetime64, np.ndarray)):
         raise TypeError("Input must be numpy.datetime64 or numpy.ndarray of datetime64")
     
-    # 如果输入是单个 datetime64,将其转换为数组
+    # Wrap scalar datetime64 input as a one-element array.
     if isinstance(dt64, np.datetime64):
         dt64 = np.array([dt64])
     
-    # 将 datetime64 转换为 datetime
+    # Convert datetime64 to Python datetime.
     dt = dt64.astype(datetime)
     
-    # 将 datetime 转换为 ISO 格式的字符串
+    # Convert datetime values to ISO strings.
     iso_strings = [d.strftime("%Y-%m-%dT%H:%M:%S.%f") for d in dt]
     
-    # 使用 spice.str2et 将 ISO 字符串转换为 ET
+    # Convert ISO strings to ephemeris time with SPICE.
     et = np.array([spice.str2et(iso_str) for iso_str in iso_strings])
     
-    # 如果输入是单个值,返回标量;否则返回数组
+    # Preserve scalar output when the input is scalar.
     return et[0] if len(et) == 1 else et
 
 #%%
@@ -403,9 +413,9 @@ def iso86012unix(time):
 
     return out
 
-#%% 示例用法
+#%% Example usage
 if __name__ == "__main__":
-    # 示例：datenum 到 datetime64 的转换
-    datenum_example = 737967.4583333334  # 对应 2020-06-25 11:00
+    # Convert MATLAB datenum to datetime64.
+    datenum_example = 737967.4583333334  # Corresponds to 2020-06-25 11:00
     result = datenum2datetime64(datenum_example)
     print(f"Datenum to Datetime64: {result}")

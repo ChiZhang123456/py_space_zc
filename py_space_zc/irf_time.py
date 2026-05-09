@@ -2,7 +2,7 @@
 """
 Created on Mon Sep  9 11:02:43 2024
 
-@author: Win
+Author: Chi Zhang
 """
 from .time_convert import datenum2datetime64, datetime642datenum, datetime2datetime64
 from .time_convert import datetime642datetime
@@ -21,16 +21,21 @@ from .time_convert import datenum2datetime
         
 def irf_time(time, coords:str):
     """
-    通用时间转换函数
+    General time conversion helper.
 
-    参数:
-    time : 输入的时间，可以是各种格式
-    coords : str, 指定转换的起始和目标格式，格式为 "from>to"
+    Parameters
+    ----------
+    time
+        Input time in one of the supported formats.
+    coords : str
+        Conversion direction in the form "from>to".
 
-    返回:
-    转换后的时间
+    Returns
+    -------
+    Converted time value.
 
-    支持的格式:
+    Supported formats
+    -----------------
     - datenum
     - datetime64
     - datetime
@@ -43,7 +48,7 @@ def irf_time(time, coords:str):
     
     from_format, to_format = coords.split('>')
     
-    # 定义转换函数字典
+    # Map explicit conversion paths to their implementation functions.
     converters = {
         "datenum>datetime64": datenum2datetime64,
         "datetime64>datenum": datetime642datenum,
@@ -63,11 +68,11 @@ def irf_time(time, coords:str):
         "iso8601>timevec": iso86012timevec,
     }
     
-    # 如果直接转换函数存在，直接使用
+    # Use a direct converter when one is available.
     if coords in converters:
         return converters[coords](time)
     
-    # 否则，尝试通过 datetime64 进行中间转换
+    # Otherwise, try datetime64 as an intermediate representation.
     to_datetime64 = converters.get(f"{from_format}>datetime64")
     from_datetime64 = converters.get(f"datetime64>{to_format}")
     

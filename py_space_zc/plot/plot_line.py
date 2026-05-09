@@ -64,7 +64,7 @@ def plot_line(axis, inp, **kwargs):
     else:
         axis.plot(time, data, **kwargs)
 
-#如果是tseries，就用下面的locator格式。
+# Use this locator format for time-series inputs.
     if time.dtype == "<M8[ns]":
         locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
         formatter = mdates.ConciseDateFormatter(locator)

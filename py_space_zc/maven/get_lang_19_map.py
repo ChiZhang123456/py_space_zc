@@ -2,7 +2,7 @@
 """
 Created on Fri Jun 14 11:57:50 2024
 
-@author: Win
+Author: Chi Zhang
 """
 from scipy.io import readsav
 import numpy as np

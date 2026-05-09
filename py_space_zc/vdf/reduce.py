@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+Reduced distribution function utilities.
+
+Author: Chi Zhang
+This module was adapted from pyrfu VDF reduction routines and modified for
+py_space_zc workflows, including spacecraft mission specific data structures.
+"""
 
 # Third party imports
 import numpy as np
@@ -93,10 +100,9 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
     z_phat_ts /= np.linalg.norm(z_phat_ts, axis=1, keepdims=True)
     y_phat_ts = np.cross(z_phat_ts, x_phat_ts)
 
-    # Construct the time series of transformation matrix
-    # 将三个[N, 3]的数组堆叠成一个形状为[3, N, 3]的新数组。
-    # 第一个维度表示坐标轴（x / y / z），第二个维度是时间点，第三个维度是三维向量的分量。
-    # np.transpose(..., [1, 2, 0])将维度重新排列成[N, 3, 3]：
+    # Construct the time series of transformation matrices.
+    # Stack the three [N, 3] basis arrays into [3, N, 3], then transpose to
+    # [N, 3, 3], where N is the number of time samples.
     xyz_ts = np.transpose(
         np.stack([x_phat_ts, y_phat_ts, z_phat_ts]),
         [1, 2, 0],
@@ -111,7 +117,7 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
     weight = kwargs.get("weight", None)
 
     v_lim = kwargs.get("v_lim", [-np.inf, np.inf])  # Velocity grid limits
-    #注意这里phi的角度是从-180到180
+    # Here phi is expected to span -180 to 180 degrees.
     a_lim = kwargs.get("a_lim", [-180.0, 180.0])  # Azimuthal angle limits
 
     # Spacecraft potential to account for photoelectrons. If not provided set
@@ -161,7 +167,7 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
     speed_grid = kwargs.get("vg", None)  # TODO : check that for no input!!
     speed_grid_edges = kwargs.get("vg_edges", None)
 
-    # initiate projected f, 初始化速度网格数量和坐标
+    # Initialize the projected distribution and velocity grid coordinates.
     if speed_grid_edges is not None:
         n_vg = len(speed_grid_edges) - 1
         speed_grid_cart = None
@@ -173,28 +179,23 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
         n_vg = 2 * n_en
         speed_grid_cart = np.linspace(-v_max, v_max, n_vg, endpoint=True)
 
-    n_pr = int(dim[0])   # n_pr = 1 or 2 or 3, 1代表1D，2代表2D, 3代表3D
+    n_pr = int(dim[0])   # n_pr = 1, 2, or 3 for 1D, 2D, or 3D projections.
 
-    # f_g是一个用于保存每个时间点t的投影分布函数数组。 n_t是时间点的数量。
-    # [n_vg] * n_pr动态生成维度长度列表，例如：
-    # 如果n_pr = 1 → [n_vg]
-    # 如果n_pr = 2 → [n_vg, n_vg]
-    # 如果n_pr = 3 → [n_vg, n_vg, n_vg]
+    # f_g stores the projected distribution at each time sample.
+    # [n_vg] * n_pr expands to [n_vg], [n_vg, n_vg], or
+    # [n_vg, n_vg, n_vg] for 1D, 2D, or 3D projections.
     f_g = np.zeros([n_t, *[n_vg] * n_pr])
 
-    # 构造一个字典 all_v，用于保存每一维速度轴（随时间变化）的值。
-    # char(120+i), char(120) = 'x'，所以:
-    # i = 0 → chr(120) = 'x' → 'vx'
-    # i = 1 → 'y' → 'vy'
-    # i = 2 → 'z' → 'vz'
+    # Store each velocity axis, which may vary with time.
+    # chr(120 + i) maps i = 0, 1, 2 to x, y, z.
     all_v = {f"v{chr(120 + i)}": np.zeros((n_t, n_vg)) for i in range(n_pr)}
 
 
     for i_t in tqdm.tqdm(range(n_t), ncols=60):  # display progress
-        # 提取每个时间点的f_3d
+        # Extract the 3D distribution for this time sample.
         f_3d = np.squeeze(vdf_data.data[i_t, ...])  # s^3/m^6
         f_3d = f_3d.astype(np.float64).copy()  # convert to C contiguous float64
-        # 提取每个时间点的能量
+        # Extract the energy bins for this time sample.
         energy = vdf_energy.data[i_t, :]
         energy = energy.astype(np.float64)  # Convert to float64
 
@@ -215,14 +216,14 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
 
         # azimuthal angle
         phi = vdf_phi.data[i_t, :].astype(np.float64)  # in degrees
-        phi = np.deg2rad(phi - 180.0)  # in radians, 可能不一样
+        phi = np.deg2rad(phi - 180.0)  # in radians
 
         # elevation angle
 
         theta = vdf_theta.data.astype(np.float64)  # in degrees
 
         if theta.ndim == 1:
-            # Case: theta is 1D → leave as is
+            # Case: theta is 1D, leave as is.
             pass
         elif theta.ndim == 2 and theta.shape[0] == n_t:
             # Case: time-dependent 2D theta [time, energy]
@@ -231,7 +232,7 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
             # Case: time and energy-dependent 3D theta [time, energy, theta]
             theta = theta[i_t, :, :]
 
-        # Convert from instrument elevation (0°–180°) to centered [-90°–90°]
+        # Convert from instrument elevation (0 to 180 deg) to centered [-90, 90] deg.
         theta = np.deg2rad(theta - 90.0)  # in radians
 
         # Set velocity projection grid.

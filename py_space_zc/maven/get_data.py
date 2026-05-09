@@ -424,12 +424,12 @@ def get_data(tint, var):
                                                                      "coordinates":"MSO"})
 
         omni_flux = ts_spectr(
-            time=res['time_def'],  # 时间维度（1D array, datetime64）
-            ener=np.flip(res['energy']),  # 能量维度（翻转顺序，从高能到低能）
-            data=np.flip(res['DEF'], axis=1),  # 数据体（二维矩阵，需与时间和能量匹配）
-            comp_name="energy",  # 能量轴的维度名
+            time=res['time_def'],  # Time dimension, 1D datetime64 array.
+            ener=np.flip(res['energy']),  # Energy dimension, flipped from high to low energy.
+            data=np.flip(res['DEF'], axis=1),  # Data matrix matching time and energy dimensions.
+            comp_name="energy",  # Energy-axis dimension name.
             attrs={
-                "name": "SWIA_omni_eflux",  # 可选元信息
+                "name": "SWIA_omni_eflux",  # Optional metadata.
                 "Instrument": "SWIA",
                 "UNITS": "keV/(cm^2 s sr keV)",
                 "species":"H+",}

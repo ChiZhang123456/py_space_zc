@@ -33,16 +33,16 @@ def scatter_time(ax=None, x=None, y=None, time=None,
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 7))
 
-    # ---- 时间 -> Matplotlib 浮点日期 ----
+    # ---- Convert time to Matplotlib float dates. ----
     time = np.asarray(time)
-    # 支持 datetime64 和 Python datetime
+    # Support datetime64 and Python datetime inputs.
     if np.issubdtype(time.dtype, np.datetime64):
-        time_dt = time.astype('datetime64[s]').astype('O')  # 转 python datetime（秒精度）
+        time_dt = time.astype('datetime64[s]').astype('O')
     else:
         time_dt = time
     time_num = mdates.date2num(time_dt)
 
-    # ---- 设定 vmin/vmax 为起止时间，去掉上下空白 ----
+    # ---- Use the start and end times as color limits. ----
     vmin = mdates.date2num(time_dt[0])
     vmax = mdates.date2num(time_dt[-1])
 
@@ -52,16 +52,16 @@ def scatter_time(ax=None, x=None, y=None, time=None,
     # ---- colorbar ----
     cbar = plt.colorbar(sc, ax=ax, fraction=0.04, pad=0.005, aspect=14)
 
-    # 至少 min_nticks 个刻度，并强制包含起点与终点
+    # Use at least min_nticks ticks and include the start and end times.
     n = max(int(min_nticks), 3)
     ticks = np.linspace(vmin, vmax, n)
     cbar.set_ticks(ticks)
 
-    # 时间格式
+    # Time format.
     cbar.ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     cbar.set_label("Time", rotation=270, labelpad=15)
 
-    # 起始时间放顶部（可选）
+    # Optionally place the start time at the top of the colorbar.
     if start_on_top:
         cbar.ax.invert_yaxis()
 

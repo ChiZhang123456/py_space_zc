@@ -68,7 +68,7 @@ if __name__ == '__main__':
     tint_shad = extend_tint(tint, [100, -30])
 
     fig, ax = plt.subplots()
-    maven.plot_B(ax, tint)  # 使用传入的 ax
+    maven.plot_B(ax, tint)  # Use the provided axes.
 
     add_top_label(ax, tint = tint_shad, color="red", alpha=0.3)
 

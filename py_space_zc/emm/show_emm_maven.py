@@ -2,7 +2,7 @@
 """
 Created on Sat Jul 27 21:16:05 2024
 
-@author: Win
+Author: Chi Zhang
 """
 from py_space_zc import maven, emm
 from pyrfu import pyrf
@@ -37,7 +37,7 @@ def show_emm_maven(tint:str, mode:str):
     midnight = maven.get_midnight(emm_aurora1304['time'])
     lon_night_center = np.nanmean(midnight['midnight_lon'])
 
-    #前后扩5分钟
+    # Time interval used for MAVEN context data.
     ts = py_space_zc.adjust_time(emm_aurora1304['time'][0], 0 * 60)
     te = py_space_zc.adjust_time(emm_aurora1304['time'][-1], 0 * 60)
     tint_mvn = [ts, te]
@@ -52,12 +52,11 @@ def show_emm_maven(tint:str, mode:str):
 
 #%% plot the figure
     f = plt.figure(figsize=(14, 10))
-#创建了一个主要的网格布局 gsp1，包括3行2列的子区域。
-#此网格具有垂直间距 (hspace) 为0，意味着行之间没有间隙。bottom、top、left 和 right 参数控制整个网格相对于图形窗口边缘的位置，从而定义了图形的边距。
+    # Create the main 4-by-2 grid layout. The bottom, top, left, and right
+    # arguments control the figure margins.
    
     gsp1 = f.add_gridspec(4, 2, hspace=0, bottom=0.09, top=0.95, left=0.1, right=0.9)
-#从主网格 gsp1 中进一步细分出两个子网格布局。
-#gsp10 被分为2行1列，位于主网格的第一行。gsp11 被分为3行1列，位于主网格的第二行。每个子网格的行间距也设置为0。
+    # Split the two main columns into subgrids for the map and time series panels.
     gsp10 = gsp1[:, 0].subgridspec(2, 1, hspace=0.15)
     gsp11 = gsp1[:, 1].subgridspec(4, 1, hspace=0)
 
@@ -105,14 +104,14 @@ def show_emm_maven(tint:str, mode:str):
     #     color="k",alpha=0.2)
     
     for ax in axs11[:-1]:
-        ax.set_xticklabels([])  # 清除x轴的刻度标签
+        ax.set_xticklabels([])  # Hide x-axis tick labels.
 
 #%% show EMM data
     original_pos = axs10[1].get_position()
     axs10[1].remove()
     axs_new = f.add_subplot(111, projection=ccrs.Orthographic(central_longitude=emm_aurora1304["lon_center"], 
                                                               central_latitude=emm_aurora1304["lat_center"]))
-    axs_new.set_position(original_pos)  # 设置新Axes的位置为原来的位置
+    axs_new.set_position(original_pos)  # Place the new axes at the original panel position.
     lat2_fig = np.nan_to_num(emm_aurora1304['lat'], nan=-9999)
     lon2_fig = np.nan_to_num(emm_aurora1304['lon'], nan=-9999)
     pc = axs_new.pcolormesh(lon2_fig, lat2_fig, emm_aurora1304['R'], 
@@ -125,10 +124,10 @@ def show_emm_maven(tint:str, mode:str):
     axs_new.set_global()
     axs_new.gridlines(linewidth=1, color='gray', 
                  alpha=0.5, linestyle='--')
-#写上纬度
+    # Add longitude labels around the map.
     longitudes_tick = [0, 45, 90, 135, 180, 225, 270, 315, 360]
     for lon_label in longitudes_tick:
-        axs_new.text(lon_label, 0, f'{lon_label}°', transform=ccrs.Geodetic(), 
+        axs_new.text(lon_label, 0, f'{lon_label} deg', transform=ccrs.Geodetic(),
                  ha='center', va='bottom', fontsize=14, color='pink', weight='bold')
 
     axs_new.text(-0.08, 0.55, 'Latitude', va='bottom', ha='center',
@@ -151,7 +150,7 @@ def show_emm_maven(tint:str, mode:str):
     axs_new.scatter(lon, lat, c = time_in_mpl,s=15, cmap="Spectral_r", edgecolors='None',
                     transform=ccrs.PlateCarree())
 
-    axs_new.set_position(original_pos)  # 设置新Axes的位置为原来的位置
+    axs_new.set_position(original_pos)  # Keep the map axes aligned with the original layout.
     
 #%% 
 if __name__ == "__main__":    

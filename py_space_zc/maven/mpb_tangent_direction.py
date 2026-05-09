@@ -20,15 +20,16 @@ def mpb_tangent_direction(Pmso, thresh=0.3):
 
     Notes
     -----
-    MPB model in x–rho (rho = sqrt(y^2+z^2)) uses:
+    MPB model in x-rho (rho = sqrt(y^2+z^2)) uses:
         R_mb = (e^2-1)(x - xF)^2 - 2 e L (x - xF) + L^2
         r_bound = sqrt(R_mb)
         dRdx = 2(e^2-1)(x - xF) - 2 e L
-        dr/dx = dRdx / (2 * r_bound)   <-- 注意 1/2 因子
+        dr/dx = dRdx / (2 * r_bound), including the 1/2 factor.
 
-    3D 切向（子午线方向）构造： t ∝ e_x + (dr/dx) * e_r，其中
-        e_r = (0, y/rho, z/rho) （当 rho≈0 时取 e_r=(0,1,0)）
-    最后强制朝尾向（t_x < 0）。
+    The 3D meridional tangent is constructed as
+        t proportional to e_x + (dr/dx) * e_r,
+    where e_r = (0, y/rho, z/rho), with e_r = (0, 1, 0) when rho is near 0.
+    The final vector is forced to point tailward, with t_x < 0.
     """
 
     # Mars radius [km]
@@ -69,8 +70,8 @@ def mpb_tangent_direction(Pmso, thresh=0.3):
     # *** Correct slope with 1/2 factor ***
     drdx = dRdx / (2.0 * r_bound)
 
-    # 近表面判据（与 mpb_normal 一致的思路）：
-    # 用极角 theta 在该 x 上找到模型点 (x_model, rho_model)，再比较偏差
+    # Near-surface criterion, consistent with mpb_normal:
+    # use polar angle theta to find the model point, then compare offsets.
     xt = x.copy()
     xt[idx_pos] -= xF1
     xt[idx_neg] -= xF2
@@ -79,34 +80,34 @@ def mpb_tangent_direction(Pmso, thresh=0.3):
     L   = np.where(idx_pos, L1, L2)
     x0  = np.where(idx_pos, xF1, xF2)
 
-    theta = np.arctan2(rho, xt)  # 极角
+    theta = np.arctan2(rho, xt)  # Polar angle.
     r_model = L / (1.0 + ecc * np.cos(theta))
     x_model = r_model * np.cos(theta) + x0
     rho_model = r_model * np.sin(theta)
 
     close = (np.abs(x_model - x) <= thresh) & (np.abs(rho_model - rho) <= thresh)
 
-    # 构造径向单位向量 e_r（YZ 平面）
+    # Construct the radial unit vector e_r in the YZ plane.
     er_y = np.where(rho > eps, y / rho, 1.0)
     er_z = np.where(rho > eps, z / rho, 0.0)
 
-    # Tangent vector in 3D: t ∝ e_x + (dr/dx) * e_r
+    # Tangent vector in 3D: t proportional to e_x + (dr/dx) * e_r.
     tx = np.ones_like(x)
     ty = drdx * er_y
     tz = drdx * er_z
 
     t = np.stack((tx, ty, tz), axis=1)
 
-    # 归一化
+    # Normalize.
     nrm = np.linalg.norm(t, axis=1, keepdims=True)
     nrm = np.clip(nrm, eps, None)
     t_hat = t / nrm
 
-    # 强制尾向（-X_MSO）：若 x 分量 >= 0，则翻转
+    # Force tailward direction, -X_MSO. Flip if the x component is positive.
     flip = t_hat[:, 0] >= 0.0
     t_hat[flip] *= -1.0
 
-    # 只保留近表面的结果，其它置 NaN
+    # Keep only near-surface results and set the others to NaN.
     t_hat[~close] = np.nan
 
     return t_hat

@@ -1,9 +1,10 @@
 """
-Adapted from pyrfu's ts_skymap module:
-(https://github.com/louis-richard/irfu-python), licensed under the MIT License
+Adapted from pyrfu (https://github.com/louis-richard/irfu-python),
+licensed under the MIT License.
 
-Original code licensed under the MIT License.
-Modified by Chi Zhang for compatibility with py_space_zc.
+Author: Chi Zhang
+Source note: this file is based on pyrfu time-series or VDF helper routines
+and was modified for compatibility with py_space_zc.
 """
 
 # 3rd party imports

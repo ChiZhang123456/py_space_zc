@@ -39,7 +39,7 @@ def tint_data(time: np.ndarray, ts: np.datetime64, te: np.datetime64, *datas):
     return (time_new, *data_new_list)
 
 if __name__ == '__main__':
-    # 假设你有如下输入：
+    # Example input:
     time = np.array(['2022-01-01T00:00:00', '2022-01-01T00:01:00', '2022-01-01T00:02:00'], dtype='datetime64[ns]')
     data1 = np.random.rand(3, 48)
     data2 = np.random.rand(3, 48, 16)
@@ -47,5 +47,5 @@ if __name__ == '__main__':
     ts = np.datetime64('2022-01-01T00:00:30')
     te = np.datetime64('2022-01-01T00:01:30')
 
-    # 调用函数
+    # Call the function.
     time_new, data1_new, data2_new = tint_data(time, ts, te, data1, data2)

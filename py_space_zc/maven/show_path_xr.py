@@ -2,7 +2,7 @@
 """
 Created on Sun Jul 28 15:51:02 2024
 
-@author: Win
+Author: Chi Zhang
 """
 
 import numpy as np
@@ -20,7 +20,7 @@ def show_path_xr(ax, Pmso, cmap = 'Spectral_r'):
     X = data[:,0] / 3390
     R = np.sqrt(data[:,1]**2 + data[:,2]**2) / 3390
     
-    # 将 datetime64 时间转换为 matplotlib 内部使用的数值格式
+    # Convert datetime64 values to Matplotlib date numbers.
     time_in_mpl = mdates.date2num(time.astype('datetime64[s]').astype('O'))
 
     bs_mpb(ax)
@@ -29,9 +29,9 @@ def show_path_xr(ax, Pmso, cmap = 'Spectral_r'):
     ax.set_xlabel(r"$X_{\mathrm{MSO}}$ (Rm)")
     ax.set_ylabel(r"$\sqrt{Y_{\mathrm{MSO}}^2 + Z_{\mathrm{MSO}}^2}$ (Rm)")
 
-    # 添加颜色条到图的外侧
+    # Add a colorbar outside the axes.
     cbar = plt.colorbar(scatter, ax=ax, fraction=0.04, pad=0.005, aspect=14)
-    cbar.ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))  # 设置时间格式为时分秒
+    cbar.ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
     #cbar.set_label('Time', labelpad=-50, rotation=270)
     ax.set_facecolor('white')
     return ax, scatter, cbar
@@ -39,8 +39,8 @@ def show_path_xr(ax, Pmso, cmap = 'Spectral_r'):
 
 
 
-# 示例用法
-# 假设 Pmso 已经是一个适当配置的 xarray.DataArray 或类似的包含时间的对象
+# Example usage.
+# Assume Pmso is a properly configured xarray.DataArray or similar time-series object.
 # show_path_xr(None, Pmso)
 
  
@@ -49,9 +49,8 @@ if __name__ == "__main__":
     B = get_data(tint, "B")
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(111)
-    fig.subplots_adjust(left=0.1, right=0.85, top=0.9, bottom=0.1)  # right=0.9 表示右侧留出10%的空白
+    fig.subplots_adjust(left=0.1, right=0.85, top=0.9, bottom=0.1)
     show_path_xr(ax, B["Pmso"])
     plt.show()
 
-    
     

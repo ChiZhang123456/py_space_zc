@@ -2,7 +2,7 @@
 """
 Created on Fri Jul 26 08:53:34 2024
 
-@author: Win
+Author: Chi Zhang
 """
 from pyrfu import maven, pyrf, emm
 import numpy as np

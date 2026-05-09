@@ -2,7 +2,7 @@
 """
 Created on Fri Jul 26 12:26:03 2024
 
-@author: Win
+Author: Chi Zhang
 """
 
 from py_space_zc import maven, emm
@@ -27,7 +27,7 @@ def show_fuv_aurora(ax, time):
     lat2_fig = np.nan_to_num(emm_aurora1304['lat'], nan=-9999)
     lon2_fig = np.nan_to_num(emm_aurora1304['lon'], nan=-9999)
 
-    # 如果ax是None，创建一个新的fig和ax
+    # Create a new figure and axes when no axes are provided.
     if ax is None:
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection=ccrs.Orthographic(central_longitude=lon_night_center, central_latitude=0))

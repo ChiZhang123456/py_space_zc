@@ -295,17 +295,17 @@ def emm_search_and_download(download_dir,
         download_from_query(q, download_dir=download_dir, use_sdc_dir_structure=use_sdc_dir_structure)
 
 def download_data(start_date, end_date, mode, level = "l2a"):
-    #这个可能后面是需要修改的。
+    # This hard-coded directory may need to be made configurable later.
     download_dir = "F:\data";
     start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
     current = start
 
     while current < end:
-            # 计算当前周期的结束日期，但不超过设定的结束日期
+            # Compute the end date for this download chunk without exceeding the requested end date.
           next_date = min(current + datetime.timedelta(days=20), end)
             
-            # 格式化日期为字符串，以便传递给 download_data 函数
+            # Format dates as strings for the download query.
           start_str = current.strftime("%Y-%m-%d")
           next_str = next_date.strftime("%Y-%m-%d")
           emm_search_and_download(download_dir = download_dir,instrument='emu',

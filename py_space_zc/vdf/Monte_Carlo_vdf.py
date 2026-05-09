@@ -1,9 +1,10 @@
 """
-Adapted from pyrfu's ts_skymap module:
-(https://github.com/louis-richard/irfu-python), licensed under the MIT License
+Adapted from pyrfu (https://github.com/louis-richard/irfu-python),
+licensed under the MIT License.
 
-Original code licensed under the MIT License.
-Modified by Chi Zhang for compatibility with py_space_zc.
+Author: Chi Zhang
+Source note: this file is based on pyrfu time-series or VDF helper routines
+and was modified for compatibility with py_space_zc.
 """
 
 import numpy as np
@@ -25,7 +26,7 @@ def _mc_pol_1d(
     v_lim,        # (2,)                      : limits of projected velocity component (km/s)
     a_lim,        # (2,)                      : angular limits (radians)
     n_mc,         # [n_v, n_phi, n_theta]     : number of Monte Carlo particles per bin
-    r_mat         # [3, 3]                    : rotation matrix (instrument frame → projected frame)
+    r_mat         # [3, 3]                    : rotation matrix (instrument frame to projected frame)
 ):
     """
     Monte-Carlo projection of 3D velocity distribution function (VDF) onto reduced space.
@@ -64,7 +65,7 @@ def _mc_pol_1d(
                     th = theta[i, k]
                     dth = d_theta[i, k]
 
-                # Compute dτ_ijk: phase space volume element (∝ v^2 * cosθ * Δv * Δϕ * Δθ)
+                # Compute dtau_ijk, the phase space volume element.
                 dtau_ijk = v[i] ** 2 * np.cos(th) * d_v[i] * d_phi[j] * dth
                 c_ijk = dtau_ijk / n_mc_ijk  # scaling factor per Monte Carlo particle
 
@@ -164,7 +165,7 @@ def _mc_cart_3d(
                     th = theta[i, k]
                     dth = d_theta[i, k]
 
-                # Phase space volume element (∝ v^2 cosθ Δv Δφ Δθ)
+                # Phase space volume element, proportional to v^2 cos(theta) dv dphi dtheta.
                 dtau_ijk = v[i] ** 2 * np.cos(th) * d_v[i] * d_phi[j] * dth
                 c_ijk = dtau_ijk / n_mc_ijk
 
@@ -229,7 +230,7 @@ def _mc_cart_2d(
     Returns
     -------
     f_g : ndarray [n_vg, n_vg]
-        Interpolated distribution in v_x'–v_y' plane.
+        Interpolated distribution in the v_x-prime to v_y-prime plane.
     """
     n_v, n_ph, n_th = vdf.shape
     n_vg = len(vg_edges) - 1

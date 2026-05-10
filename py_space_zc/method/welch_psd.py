@@ -454,7 +454,7 @@ def psd_welch(
         ax_comp_psd.set_ylabel(r"PSD ($nT^2/Hz$)", fontsize=13)
         ax_comp_psd.grid(True, which="both", ls=":", alpha=0.5)
         ax_comp_psd.legend(fontsize=10)
-        ax_comp_psd.set_title("Parallel and Perpendicular PSD", fontweight="bold", fontsize=14)
+        ax_comp_psd.set_title("Parallel and Perpendicular PSD", fontweight="regular", fontsize=14)
 
         ax_total_psd.loglog(f, p_total, label=r"$\delta B_{trace}$", color="black", lw=1.1)
         ax_total_psd.axvline(f_ci, color="red", ls="--", alpha=0.7, label=f"$f_{{ci}}$={f_ci:.2f} Hz")
@@ -490,7 +490,7 @@ def psd_welch(
         ax_total_psd.set_ylabel(r"PSD ($nT^2/Hz$)", fontsize=13)
         ax_total_psd.grid(True, which="both", ls=":", alpha=0.5)
         ax_total_psd.legend(fontsize=10)
-        ax_total_psd.set_title("Trace PSD and Power-Law Fit", fontweight="bold", fontsize=14)
+        ax_total_psd.set_title("Trace PSD and Power-Law Fit", fontweight="regular", fontsize=14)
 
         ax_comp_ratio.semilogx(f, comp_ratio, color="purple", lw=1.2)
         ax_comp_ratio.axvline(f_ci, color="red", ls="--", alpha=0.7)
@@ -503,7 +503,7 @@ def psd_welch(
         ax_comp_ratio.set_ylim(0, 1.0)
         ax_comp_ratio.grid(True, which="both", ls=":", alpha=0.5)
         ax_comp_ratio.legend(fontsize=10)
-        ax_comp_ratio.set_title("Magnetic Compressibility", fontweight="bold", fontsize=14)
+        ax_comp_ratio.set_title("Magnetic Compressibility", fontweight="regular", fontsize=14)
 
 
         ax_acf.plot(tau_axis_l, acf_l, label=r"ACF $\delta B_{\perp 1}$", color="#1f77b4")
@@ -516,7 +516,7 @@ def psd_welch(
         ax_acf.set_xlim(0, max(tau_axis_l)/12)
         ax_acf.grid(True, ls=":", alpha=0.5)
         ax_acf.legend(fontsize=10, loc="upper right")
-        ax_acf.set_title("Autocorrelation Function", fontweight="bold", fontsize=14)
+        ax_acf.set_title("Autocorrelation Function", fontweight="regular", fontsize=14)
 
         if tint:
             fig.suptitle(f"Interval: {tint[0]} to {tint[1]}", fontsize=12, y=1.02)

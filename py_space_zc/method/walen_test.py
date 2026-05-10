@@ -89,7 +89,7 @@ def walen_test(ax, vht, ne, B, vH, tint_focus=None,
     y_pos = 0.98
     for i in plot_indices:
         ax.text(0.95, y_pos, labels_full[i], color=colors_full[i], transform=ax.transAxes, 
-                fontsize=fs_text, fontweight='bold', ha='right', va='top')
+                fontsize=fs_text, fontweight='regular', ha='right', va='top')
         y_pos -= 0.1
     ax.text(0.95, y_pos, 'Fit', color='#333333', transform=ax.transAxes, 
             fontsize=fs_text-1, ha='right', va='top')

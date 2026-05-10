@@ -96,9 +96,9 @@ def vdf_overview(time):
     plot_plane(axs[5], f2d_yz, r'$V_Y$ (km/s)', r'$V_Z$ (km/s)', add_colorbar=True)
 
     # Add title
-    plot.add_time_title(axs[1], np.datetime64(time), "yyyy-mm-dd HH:MM:SS", fontsize=15, fontweight='bold')
+    plot.add_time_title(axs[1], np.datetime64(time), "yyyy-mm-dd HH:MM:SS", fontsize=15, fontweight='regular')
     plot.add_text(axs[0], 'SWIA VDF Overview', 0.1, 1.15,
-                  va = 'bottom', ha = 'left',fontsize=15, fontweight='bold')
+                  va = 'bottom', ha = 'left',fontsize=15, fontweight='regular')
     # Add stars
     axs[0].plot(vb_val, vv_val, color='k', marker='*', linestyle='None', markersize=12)
     axs[1].plot(vb_val, ve_val, color='k', marker='*', linestyle='None', markersize=12)

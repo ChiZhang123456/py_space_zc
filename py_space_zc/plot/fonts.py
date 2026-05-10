@@ -8,7 +8,7 @@ from pyfonts import load_google_font
 
 
 FONT_FAMILY = "Roboto"
-FONT_WEIGHT = "bold"
+FONT_WEIGHT = "regular"
 
 
 @lru_cache(maxsize=1)
@@ -31,7 +31,7 @@ def configure_plot_font():
     plt.rcParams["mathtext.fontset"] = "custom"
     plt.rcParams["mathtext.rm"] = family
     plt.rcParams["mathtext.it"] = f"{family}:italic"
-    plt.rcParams["mathtext.bf"] = f"{family}:bold"
+    plt.rcParams["mathtext.bf"] = family
     plt.rcParams["axes.unicode_minus"] = False
     return font
 

@@ -18,12 +18,12 @@ The package is research oriented and currently in active development.
 
 ## Plot Font
 
-Package plotting helpers use Roboto bold as the default font through `pyfonts`:
+Package plotting helpers use Roboto regular as the default font through `pyfonts`:
 
 ```python
 from pyfonts import load_google_font
 
-font = load_google_font("Roboto", weight="bold")
+font = load_google_font("Roboto", weight="regular")
 ```
 
 The shared plotting utilities configure Matplotlib with this font automatically, including axis labels, tick labels, titles, legends, colorbar labels, and math text where possible.

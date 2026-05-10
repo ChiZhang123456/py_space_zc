@@ -26,7 +26,7 @@ def add_text(ax, text, x, y,
         Font size of the text. Default is 12.
     fontweight : str, optional
         Font weight. Default is 'normal'.
-        Options: 'light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black'.
+        Options include 'light', 'normal', 'medium', and heavier font weights.
     facecolor : str or None, optional
         Background color of the text box. Default is None (no background).
     **kwargs :
@@ -44,7 +44,7 @@ def add_text(ax, text, x, y,
     >>> add_text(ax, "Example", 0.1, 0.9,
     ...          va="top", ha="left",
     ...          color="red", fontsize=14,
-    ...          fontweight="bold", facecolor="yellow")
+    ...          fontweight="normal", facecolor="yellow")
     >>> plt.show()
     """
     bbox = None

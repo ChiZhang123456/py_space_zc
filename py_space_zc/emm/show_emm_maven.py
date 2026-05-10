@@ -128,7 +128,7 @@ def show_emm_maven(tint:str, mode:str):
     longitudes_tick = [0, 45, 90, 135, 180, 225, 270, 315, 360]
     for lon_label in longitudes_tick:
         axs_new.text(lon_label, 0, f'{lon_label} deg', transform=ccrs.Geodetic(),
-                 ha='center', va='bottom', fontsize=14, color='pink', weight='bold')
+                 ha='center', va='bottom', fontsize=14, color='pink', weight='regular')
 
     axs_new.text(-0.08, 0.55, 'Latitude', va='bottom', ha='center',
         rotation='vertical', rotation_mode='anchor',

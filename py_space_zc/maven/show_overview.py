@@ -148,6 +148,23 @@ def _apply_overview_font(fig):
     plot.apply_plot_font(fig)
 
 
+def _show_no_data(ax, message="No data"):
+    ax.clear()
+    ax.text(
+        0.5, 0.5, message,
+        transform=ax.transAxes,
+        ha="center", va="center",
+        fontsize=14,
+    )
+    plot.set_axis(ax, grid=False, show_xticklabels=False, show_yticklabels=False)
+
+
+def _remove_new_axes(fig, known_axes):
+    for ax in list(fig.axes):
+        if ax not in known_axes:
+            ax.remove()
+
+
 def _normalize_panels(panels):
     if panels is None:
         return DEFAULT_PANELS.copy()
@@ -171,38 +188,45 @@ def _normalize_panels(panels):
 
 
 def _plot_trajectory(ax_left, tint):
-    B = maven.get_data(tint, "B")
-    Pmvn = B["Pmso"].data / 3390.0
-    Rmvn = np.sqrt(Pmvn[:, 1] ** 2 + Pmvn[:, 2] ** 2)
-    t_mvn = B["Pmso"].time.data
+    fig = ax_left[0].figure
+    known_axes = set(fig.axes)
+    try:
+        B = maven.get_data(tint, "B")
+        Pmvn = B["Pmso"].data / 3390.0
+        Rmvn = np.sqrt(Pmvn[:, 1] ** 2 + Pmvn[:, 2] ** 2)
+        t_mvn = B["Pmso"].time.data
 
-    _, _, c1 = plot.scatter_time(
-        ax_left[0], Pmvn[:, 0], Rmvn, t_mvn,
-        cmap="Spectral_r", size=5.0, min_nticks=3)
-    maven.bs_mpb(ax_left[0])
-    plot.set_axis(
-        ax_left[0], xlim=(-4.0, 2.0), ylim=(0.0, 5.5),
-        tick_fontsize=12, label_fontsize=14,
-        xlabel=r"$X_{\mathrm{MSO}}\ (R_{\rm M})$",
-        ylabel=r"$\sqrt{Y_{\mathrm{MSO}}^2 + Z_{\mathrm{MSO}}^2}$ (R$_\mathrm{M}$)",
-        facecolor="white", grid=False)
-    ax_left[0].set_aspect("equal")
-    c1.ax.set_ylabel("")
-    plot.adjust_colorbar(ax_left[0], c1, 0.005, 0.8, 0.015)
+        _, _, c1 = plot.scatter_time(
+            ax_left[0], Pmvn[:, 0], Rmvn, t_mvn,
+            cmap="Spectral_r", size=5.0, min_nticks=3)
+        maven.bs_mpb(ax_left[0])
+        plot.set_axis(
+            ax_left[0], xlim=(-4.0, 2.0), ylim=(0.0, 5.5),
+            tick_fontsize=12, label_fontsize=14,
+            xlabel=r"$X_{\mathrm{MSO}}\ (R_{\rm M})$",
+            ylabel=r"$\sqrt{Y_{\mathrm{MSO}}^2 + Z_{\mathrm{MSO}}^2}$ (R$_\mathrm{M}$)",
+            facecolor="white", grid=False)
+        ax_left[0].set_aspect("equal")
+        c1.ax.set_ylabel("")
+        plot.adjust_colorbar(ax_left[0], c1, 0.005, 0.8, 0.015)
 
-    _, _, c2 = plot.scatter_time(
-        ax_left[1], Pmvn[:, 1], Pmvn[:, 2], t_mvn,
-        cmap="Spectral_r", size=5.0, min_nticks=3, zorder=20)
-    maven.plot_mars(ax_left[1], texture=True, alpha=1.0, zorder=30)
-    plot.set_axis(
-        ax_left[1], xlim=(-4.0, 4.0), ylim=(-4.0, 4.0),
-        tick_fontsize=12, label_fontsize=14,
-        xlabel=r"$Y_{\mathrm{MSO}}\ (R_{\rm M})$",
-        ylabel=r"$Z_{\mathrm{MSO}}\ (R_{\rm M})$",
-        facecolor="white", grid=False)
-    ax_left[1].set_aspect("equal")
-    c2.ax.set_ylabel("")
-    plot.adjust_colorbar(ax_left[1], c2, 0.005, 0.8, 0.015)
+        _, _, c2 = plot.scatter_time(
+            ax_left[1], Pmvn[:, 1], Pmvn[:, 2], t_mvn,
+            cmap="Spectral_r", size=5.0, min_nticks=3, zorder=20)
+        maven.plot_mars(ax_left[1], texture=True, alpha=1.0, zorder=30)
+        plot.set_axis(
+            ax_left[1], xlim=(-4.0, 4.0), ylim=(-4.0, 4.0),
+            tick_fontsize=12, label_fontsize=14,
+            xlabel=r"$Y_{\mathrm{MSO}}\ (R_{\rm M})$",
+            ylabel=r"$Z_{\mathrm{MSO}}\ (R_{\rm M})$",
+            facecolor="white", grid=False)
+        ax_left[1].set_aspect("equal")
+        c2.ax.set_ylabel("")
+        plot.adjust_colorbar(ax_left[1], c2, 0.005, 0.8, 0.015)
+    except Exception:
+        _remove_new_axes(fig, known_axes)
+        for ax in ax_left:
+            _show_no_data(ax)
 
 
 def show_overview(tint, panels=None, base_size=12):
@@ -248,7 +272,12 @@ def show_overview(tint, panels=None, base_size=12):
     ax_right = np.asarray(ax_right_grid).reshape(-1)
 
     for i, (name, ax) in enumerate(zip(panel_names, ax_right)):
-        _PANEL_PLOTTERS[name](ax, tint)
+        known_axes = set(fig.axes)
+        try:
+            _PANEL_PLOTTERS[name](ax, tint)
+        except Exception:
+            _remove_new_axes(fig, known_axes)
+            _show_no_data(ax)
         if i == 0:
             plot.add_time_title(
                 ax, tint, "yyyy/mm/dd HH:MM - HH:MM",

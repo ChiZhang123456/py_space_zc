@@ -26,7 +26,6 @@ from .get_data import get_data, load_data
 from .coords_convert import coords_convert
 from .get_lang_19_map import get_lang_19_map
 from .show_overview import show_overview
-from .show_maven_data import show_maven_data
 # -----------------------------------------------------------------------------
 # Position & geometry
 # -----------------------------------------------------------------------------
@@ -117,7 +116,6 @@ __all__ = [
     "coords_convert",
     "get_lang_19_map",
     "show_overview",
-    'show_maven_data',
 
     # position & geometry
     "get_pos_spice",

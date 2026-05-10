@@ -16,25 +16,6 @@ The package is research oriented and currently in active development.
 - Plotting helpers for time series, spectrograms, skymaps, spacecraft trajectories, and planetary maps
 - Ionization, sputtering, and neutral atmosphere helper routines
 
-## Plot Font
-
-Package plotting helpers use Arial regular as the default font:
-
-```python
-from py_space_zc import plot
-
-font = plot.get_plot_font()
-```
-
-The shared plotting utilities configure Matplotlib with this font automatically, including axis labels, tick labels, titles, legends, colorbar labels, and math text where possible.
-The default base font size is 12 and can be changed with:
-
-```python
-from py_space_zc import plot
-
-plot.configure_plot_font(base_size=14)
-```
-
 ## Installation
 
 Install directly from GitHub:
@@ -80,10 +61,18 @@ MAVEN data paths can be initialized with:
 ```python
 from py_space_zc import maven
 
-maven.db_init()
+maven.db_init(r"F:\data\maven\data\sci")
 ```
 
-Then configure the generated MAVEN data path file for the local machine.
+MAVEN SPICE kernels can be initialized with:
+
+```python
+from py_space_zc import maven
+
+maven.spice_init(r"F:\kernels")
+```
+
+This writes `maven_kernel.txt` in the current working directory. Adjust both paths for the local machine.
 
 ## Package Data
 

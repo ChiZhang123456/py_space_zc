@@ -66,7 +66,8 @@ def plot_maven_tianwen_xr(
         _, ax = plt.subplots(figsize=(8, 6))
 
     # Draw bow shock / MPB boundaries
-    maven.bs_mpb(ax)
+    maven.bs_mpb(ax, sphere=False, mars_color="none", mars_lw=0.1)
+    maven.plot_mars(ax, texture=True, alpha=1.0, zorder=30)
 
     # --------------------------------------------------------------
     # Scatter plots with time as colormap
@@ -119,6 +120,7 @@ def plot_maven_tianwen_xr(
                label="Tianwen-1", markersize=12, markeredgecolor="violet"),
     ]
     leg = ax.legend(handles=handles, loc="best", frameon=False)
+    plot.apply_plot_font(ax.figure)
 
     return ax, cbar, leg
 

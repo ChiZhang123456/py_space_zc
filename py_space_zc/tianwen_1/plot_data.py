@@ -12,10 +12,13 @@ from matplotlib.colors import Normalize, LogNorm
 from pyrfu import pyrf
 from py_space_zc.plot import plot_line, adjust_colorbar
 from py_space_zc.plot import plot_spectr
+from py_space_zc.plot import apply_plot_font, configure_plot_font, get_plot_font
 import py_space_zc.tianwen_1 as tw
 from py_space_zc import pad_split_energy  # Ensure this is implemented correctly
 import matplotlib.cm as cm
 from pyrfu.pyrf import extend_tint
+
+configure_plot_font()
 
 def plot_B(ax, tint):
     if ax is None:
@@ -25,6 +28,7 @@ def plot_B(ax, tint):
     plot_line(ax, B["Bmso"])
     ax.set_ylabel(r"$B_{\mathrm{MSO}}\ (\mathrm{nT})$")
     ax.set_xlim(np.datetime64(tint[0]), np.datetime64(tint[1]))
+    apply_plot_font(ax)
     return ax
 
 
@@ -91,7 +95,9 @@ def plot_minpa_mod1_omni(ax, tint, species, interp=False , clim=None):
                       facecolor='black', edgecolor='none',
                       alpha=0.6)
     ax.text(0.97, 0.97, label, transform=ax.transAxes, color='white',
-            ha='right', va='top', fontsize=12, bbox=bbox_props)
+            ha='right', va='top', fontsize=12,
+            fontproperties=get_plot_font(), bbox=bbox_props)
+    apply_plot_font(ax.figure)
 
     return ax, cax
 

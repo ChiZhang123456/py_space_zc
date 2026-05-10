@@ -6,7 +6,6 @@ from matplotlib.ticker import NullFormatter
 from matplotlib.colors import Normalize
 from typing import Iterable, Tuple, Optional
 from py_space_zc import maven, tianwen_1, plot, lmn
-import matplotlib.patches as patches
 
 
 def plot_maven_tianwen_yz_mse(
@@ -22,7 +21,7 @@ def plot_maven_tianwen_yz_mse(
     cbar_pad: float = 0.04,
     cbar_fraction: float = 0.02,
     cbar_aspect: float = 10.0,
-    mars_face_alpha: float = 0.35,
+    mars_face_alpha: float = 1.0,
     mars_edge: bool = False,
 ):
     """
@@ -164,17 +163,11 @@ def plot_maven_tianwen_yz_mse(
     ax.set_xlabel(r"$Y_{\mathrm{MSE}}$ (R$_\mathrm{M}$)")
     ax.set_ylabel(r"$Z_{\mathrm{MSE}}$ (R$_\mathrm{M}$)")
 
-    # Mars disk at origin (radius = 1 R_M)
-    facecolor = "black" if not mars_edge else "none"
-    circle = patches.Circle(
-        (0, 0), radius=1,
-        facecolor=facecolor,
-        edgecolor="black",
-        linewidth=1.0 if mars_edge else 0.0,
-        alpha=mars_face_alpha,
-        zorder=9
-    )
-    ax.add_patch(circle)
+    # Mars disk at origin (radius = 1 R_M).
+    maven.plot_mars(ax, texture=True, alpha=mars_face_alpha, zorder=30)
+    if mars_edge:
+        maven.plot_mars(ax, texture=False, alpha=1.0, zorder=31,
+                        facecolor="none", edgecolor="black", lw=1.0)
 
     # -------------------------------
     # Shared colorbar (time axis)
@@ -211,6 +204,7 @@ def plot_maven_tianwen_yz_mse(
                label="Tianwen-1", markersize=12, markeredgecolor="violet"),
     ]
     leg = ax.legend(handles=handles, loc="best", frameon=False)
+    plot.apply_plot_font(ax.figure)
 
     return ax, cbar, leg
 

@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
 from py_space_zc import maven, tianwen_1, plot
-import matplotlib.patches as patches
 
 
 def plot_maven_tianwen_yz(
@@ -95,7 +94,7 @@ def plot_maven_tianwen_yz(
     ax.set_xlabel(r"$Y_{\mathrm{MSO}}$ (R$_\mathrm{M}$)")
     ax.set_ylabel(r"$Z_{\mathrm{MSO}}$ (R$_\mathrm{M}$)")
 
-    ax.add_patch(patches.Circle((0, 0), radius=1, color='black', alpha=0.35, zorder=10))
+    maven.plot_mars(ax, texture=True, alpha=1.0, zorder=30)
 
 
     # --------------------------------------------------------------
@@ -119,6 +118,7 @@ def plot_maven_tianwen_yz(
                label="Tianwen-1", markersize=12, markeredgecolor="violet"),
     ]
     leg = ax.legend(handles=handles, loc="best", frameon=False)
+    plot.apply_plot_font(ax.figure)
 
     return ax, cbar, leg
 

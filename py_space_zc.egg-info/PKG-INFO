@@ -64,6 +64,18 @@ The package is research oriented and currently in active development.
 - Plotting helpers for time series, spectrograms, skymaps, spacecraft trajectories, and planetary maps
 - Ionization, sputtering, and neutral atmosphere helper routines
 
+## Plot Font
+
+Package plotting helpers use Roboto bold as the default font through `pyfonts`:
+
+```python
+from pyfonts import load_google_font
+
+font = load_google_font("Roboto", weight="bold")
+```
+
+The shared plotting utilities configure Matplotlib with this font automatically, including axis labels, tick labels, titles, legends, colorbar labels, and math text where possible.
+
 ## Installation
 
 Install directly from GitHub:
@@ -88,6 +100,7 @@ Core dependencies are declared in `setup.py`. They include:
 - `matplotlib`, `cartopy`, `pyvista`
 - `spacepy`, `cdflib`, `spiceypy`, `pyrfu`
 - `astropy`, `h5py`, `numba`, `tqdm`, `requests`
+- `pyfonts` for loading the package plotting font
 - `pyshtools`, `pymagglobal`
 - `irfpy` for Venus Express tools
 

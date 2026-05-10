@@ -27,6 +27,13 @@ font = load_google_font("Roboto", weight="regular")
 ```
 
 The shared plotting utilities configure Matplotlib with this font automatically, including axis labels, tick labels, titles, legends, colorbar labels, and math text where possible.
+The default base font size is 12 and can be changed with:
+
+```python
+from py_space_zc import plot
+
+plot.configure_plot_font(base_size=14)
+```
 
 ## Installation
 

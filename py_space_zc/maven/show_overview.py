@@ -205,7 +205,7 @@ def _plot_trajectory(ax_left, tint):
     plot.adjust_colorbar(ax_left[1], c2, 0.005, 0.8, 0.015)
 
 
-def show_overview(tint, panels=None):
+def show_overview(tint, panels=None, base_size=12):
     """
     Overview plot of MAVEN measurements over a given time interval.
 
@@ -216,6 +216,8 @@ def show_overview(tint, panels=None):
     panels : list[str] or str, optional
         Right-column panels to draw. If omitted, the historical default is used:
         ["sta_H", "sta_O", "sta_O2", "swia_omni", "swea_omni", "B"].
+    base_size : float, default 12
+        Base font size passed to the package-wide plot font configuration.
 
         Common options:
         "B", "B_high", "B_mse", "swia_omni", "swia_density",
@@ -227,7 +229,7 @@ def show_overview(tint, panels=None):
     >>> maven.show_overview(tint, ["B", "swia_omni"])
     >>> maven.show_overview(tint, ["B", "swia_omni", "swea_omni", "swia_density"])
     """
-    plot.configure_plot_font()
+    plot.configure_plot_font(base_size=base_size)
 
     panel_names = _normalize_panels(panels)
     n_panels = len(panel_names)
@@ -248,7 +250,9 @@ def show_overview(tint, panels=None):
     for i, (name, ax) in enumerate(zip(panel_names, ax_right)):
         _PANEL_PLOTTERS[name](ax, tint)
         if i == 0:
-            plot.add_time_title(ax, tint, "yyyy/mm/dd HH:MM - HH:MM")
+            plot.add_time_title(
+                ax, tint, "yyyy/mm/dd HH:MM - HH:MM",
+                fontsize=base_size + 2)
         if i < n_panels - 1:
             ax.set_xlabel("")
         plot.set_axis(ax, fontsize=12, tick_fontsize=12, label_fontsize=13, grid=False)

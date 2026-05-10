@@ -26,7 +26,7 @@ set_axis(ax, yscale='linear')            # now override to linear
 
 from typing import Iterable, Optional, Sequence, Tuple, Union
 import matplotlib.pyplot as plt
-from .fonts import apply_plot_font, get_plot_font
+from .fonts import apply_plot_font
 
 Number = Union[int, float]
 
@@ -113,8 +113,6 @@ def set_axis(
     tick_width : float, optional
         Line width for tick marks.
     """
-    font = get_plot_font()
-
     # Axis limits
     if xlim is not None:
         ax.set_xlim(xlim)
@@ -135,11 +133,9 @@ def set_axis(
 
     # Labels
     if xlabel is not None:
-        ax.set_xlabel(xlabel, fontproperties=font)
+        ax.set_xlabel(xlabel)
     if ylabel is not None:
-        ax.set_ylabel(ylabel, fontproperties=font)
-    ax.xaxis.label.set_fontproperties(font)
-    ax.yaxis.label.set_fontproperties(font)
+        ax.set_ylabel(ylabel)
 
     # Font sizes
     if fontsize is not None:
@@ -175,7 +171,7 @@ def set_axis(
 
     # Title
     if title is not None:
-        ax.set_title(title, fontsize=title_fontsize, fontproperties=font)
+        ax.set_title(title, fontsize=title_fontsize)
 
     # Spines (axis lines)
     if spine_color is not None or spine_width is not None:
@@ -220,9 +216,6 @@ def set_axis(
         for label in ax.get_yticklabels():
             label.set_fontsize(formatter_fontsize)
 
-    for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontproperties(font)
-    ax.title.set_fontproperties(font)
     apply_plot_font(ax)
 
 

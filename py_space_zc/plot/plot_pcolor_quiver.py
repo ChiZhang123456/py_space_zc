@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm, TwoSlopeNorm
 from typing import Optional, Sequence, Dict, Any
 from .add_colorbar import add_colorbar
+from .fonts import apply_plot_font, configure_plot_font
 
 def plot_pcolor_quiver(
     ax: Optional[plt.Axes],
@@ -38,6 +39,8 @@ def plot_pcolor_quiver(
     """
     Plot a pseudocolor mesh of vector magnitude with quiver arrows on top.
     """
+
+    configure_plot_font()
 
     if ax is None:
         _, ax = plt.subplots(figsize=(7, 7))
@@ -125,5 +128,6 @@ def plot_pcolor_quiver(
             cbar.set_label(cbar_label)
 
     ax.tick_params(axis='both', direction='in')
+    apply_plot_font(ax)
 
     return ax, pcm, qs, cbar

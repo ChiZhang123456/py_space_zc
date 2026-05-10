@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from .fonts import apply_plot_font, get_plot_font
 
 def add_time_title(ax, tint, format: str = "yyyy/mm/dd HH:MM - HH:MM", **kwargs):
     """
@@ -76,8 +77,9 @@ def add_time_title(ax, tint, format: str = "yyyy/mm/dd HH:MM - HH:MM", **kwargs)
         title = ts.strftime(left_fmt)
 
     # Apply title
-    kwargs.setdefault("fontname", "Times New Roman")
+    kwargs.setdefault("fontproperties", get_plot_font())
     ax.set_title(title, **kwargs)
+    apply_plot_font(ax)
 
 
 # ==================== Example Usage ====================

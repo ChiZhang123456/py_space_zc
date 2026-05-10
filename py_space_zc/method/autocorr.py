@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 from scipy import signal
+from py_space_zc.plot import apply_plot_font, configure_plot_font, get_plot_font
 
 
 def autocorr(inp, plot=False, demean=False):
@@ -66,8 +67,7 @@ def autocorr(inp, plot=False, demean=False):
 
     # 5. Conditional Plotting
     if plot:
-        plt.rcParams['font.family'] = 'serif'
-        plt.rcParams['font.serif'] = ['Times New Roman']
+        font = configure_plot_font()
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -86,12 +86,12 @@ def autocorr(inp, plot=False, demean=False):
             t_coh = lag_time[idx_e]
             ax.axvline(t_coh, color='tab:red', linestyle=':', linewidth=1.5)
             ax.text(t_coh * 1.1, 0.8, f'Coherence Time: {t_coh:.1f} s',
-                    color='tab:red', fontweight='bold', family='serif')
+                    color='tab:red', fontproperties=font)
 
         # Aesthetics
-        ax.set_xlabel('Lag Time (s)', fontsize=14, family='serif')
-        ax.set_ylabel('ACF', fontsize=14, family='serif')
-        ax.set_title('Autocorrelation Analysis', fontsize=16, family='serif', fontweight='bold')
+        ax.set_xlabel('Lag Time (s)', fontsize=14, fontproperties=get_plot_font())
+        ax.set_ylabel('ACF', fontsize=14, fontproperties=get_plot_font())
+        ax.set_title('Autocorrelation Analysis', fontsize=16, fontproperties=get_plot_font())
         ax.grid(True, which='both', linestyle='--', alpha=0.5)
 
         # Focus on the relevant part (first 25% of the total duration)
@@ -100,6 +100,7 @@ def autocorr(inp, plot=False, demean=False):
 
         ax.legend(frameon=False, loc='upper right')
         ax.tick_params(direction='in', which='both', top=True, right=True)
+        apply_plot_font(fig)
 
         plt.tight_layout()
         plt.show()

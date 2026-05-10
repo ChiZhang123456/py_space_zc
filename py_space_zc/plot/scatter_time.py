@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from .fonts import apply_plot_font, get_plot_font
 
 def scatter_time(ax=None, x=None, y=None, time=None,
                  cmap='Spectral_r', size=15,
                  min_nticks=3, start_on_top=False,
-                 zorder=None, fontname="Times New Roman", **kwargs):
+                 zorder=None, fontname=None, **kwargs):
     """
     Scatter with a time-colored colorbar.
 
@@ -27,8 +28,8 @@ def scatter_time(ax=None, x=None, y=None, time=None,
         If True, put the start time at the top of the colorbar.
     zorder : float or None
         Drawing order for the scatter points.
-    fontname : str
-        Font family used for the colorbar label and tick labels.
+    fontname : str or None
+        Deprecated. The package-wide plotting font is used.
     **kwargs
         Additional keyword arguments forwarded to matplotlib.axes.Axes.scatter.
 
@@ -70,10 +71,9 @@ def scatter_time(ax=None, x=None, y=None, time=None,
 
     # Time format.
     cbar.ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-    cbar.set_label("Time", rotation=270, labelpad=15, fontname=fontname)
-    cbar.ax.yaxis.label.set_fontname(fontname)
-    for label in cbar.ax.get_yticklabels():
-        label.set_fontname(fontname)
+    font = get_plot_font()
+    cbar.set_label("Time", rotation=270, labelpad=15, fontproperties=font)
+    apply_plot_font(cbar.ax)
 
     # Optionally place the start time at the top of the colorbar.
     if start_on_top:

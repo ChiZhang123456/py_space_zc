@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from .set_axis import set_axis
+from .fonts import configure_plot_font
 
 
 def subplot(
@@ -16,7 +17,7 @@ def subplot(
         sharey: bool = False,
 ):
     """
-    Create subplots with a 2D axes array return and global Times New Roman font.
+    Create subplots with a 2D axes array return and the package-wide plotting font.
 
     Parameters
     ----------
@@ -47,11 +48,7 @@ def subplot(
     """
 
     # --- 1. Global Font Configuration ---
-    # Set default font to Times New Roman.
-    plt.rcParams['font.family'] = 'serif'
-    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
-    # Ensure minus signs display correctly with Times New Roman.
-    plt.rcParams['axes.unicode_minus'] = False
+    configure_plot_font()
 
     if nrows < 1 or ncols < 1:
         raise ValueError("nrows and ncols must be at least 1.")

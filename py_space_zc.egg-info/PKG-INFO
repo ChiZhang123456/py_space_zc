@@ -26,6 +26,7 @@ Requires-Dist: pymagglobal
 Requires-Dist: pyrfu
 Requires-Dist: pyshtools
 Requires-Dist: python-dateutil
+Requires-Dist: pyfonts
 Requires-Dist: pyvista
 Requires-Dist: requests
 Requires-Dist: scipy

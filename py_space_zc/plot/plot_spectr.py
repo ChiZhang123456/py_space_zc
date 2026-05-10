@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from .fonts import apply_plot_font, configure_plot_font
 
 
 def plot_spectr(
@@ -41,6 +42,8 @@ def plot_spectr(
     out : tuple or axis
         Returns (axis, cax) if colorbar is added; otherwise returns axis only.
     """
+
+    configure_plot_font()
 
     # Create axis if none is provided
     if axis is None:
@@ -171,4 +174,5 @@ def plot_spectr(
     else:
         raise NotImplementedError("colorbar must be: 'right', 'top', or 'none'")
 
+    apply_plot_font(fig)
     return out

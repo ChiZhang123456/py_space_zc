@@ -180,6 +180,7 @@ py_space_zc/plot/add_top_label.py
 py_space_zc/plot/adjust_colorbar.py
 py_space_zc/plot/bar1d.py
 py_space_zc/plot/connect_axes.py
+py_space_zc/plot/fonts.py
 py_space_zc/plot/hist1d.py
 py_space_zc/plot/hist2d.py
 py_space_zc/plot/plot_clock_angle.py

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
 from py_space_zc import ts_spectr, ts_vec_xyz
+from py_space_zc.plot import apply_plot_font, configure_plot_font
 from .fac import fac
 
 def _time_seconds_from_datetime64(time_raw):
@@ -439,9 +440,7 @@ def psd_welch(
     tau_axis_n, acf_n = calculate_normalized_acf(signal.detrend(acf_fac[:, 0], type="linear"), dt)
 
     if plot:
-        plt.rcParams.update(
-            {"font.family": "serif", "font.serif": ["Times New Roman"], "mathtext.fontset": "stix"}
-        )
+        configure_plot_font()
         fig, axes = plt.subplots(2, 2, figsize=(12, 9), dpi=100)
         ax_comp_psd, ax_total_psd = axes[0]
         ax_comp_ratio, ax_acf = axes[1]
@@ -522,6 +521,7 @@ def psd_welch(
         if tint:
             fig.suptitle(f"Interval: {tint[0]} to {tint[1]}", fontsize=12, y=1.02)
 
+        apply_plot_font(fig)
         plt.tight_layout()
         plt.show()
 

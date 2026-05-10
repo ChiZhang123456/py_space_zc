@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from typing import Optional
+from .fonts import apply_plot_font
 
 def add_colorbar(
     ax,
@@ -82,4 +83,5 @@ def add_colorbar(
         cax = fig.add_axes([x0, y0, width_cbar, height_cbar])
         cbar = fig.colorbar(pcm, cax=cax, orientation="horizontal", **cbar_kwargs)
 
+    apply_plot_font(cbar.ax)
     return cbar

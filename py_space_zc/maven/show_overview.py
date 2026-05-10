@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.text import Text
 from py_space_zc import maven, plot
 
 
@@ -144,36 +143,9 @@ _PANEL_PLOTTERS = {
 }
 
 
-def _configure_times_font(fontname="Times New Roman"):
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["font.serif"] = [fontname] + [
-        name for name in plt.rcParams["font.serif"] if name != fontname
-    ]
-    plt.rcParams["mathtext.fontset"] = "custom"
-    plt.rcParams["mathtext.rm"] = fontname
-    plt.rcParams["mathtext.it"] = f"{fontname}:italic"
-    plt.rcParams["mathtext.bf"] = f"{fontname}:bold"
-    plt.rcParams["axes.unicode_minus"] = False
-
-
-def _apply_times_font(fig, fontname="Times New Roman"):
+def _apply_overview_font(fig):
     """Force all axes, titles, labels, ticks, colorbars, and legends to use one font."""
-    for ax in fig.axes:
-        ax.title.set_fontname(fontname)
-        ax.xaxis.label.set_fontname(fontname)
-        ax.yaxis.label.set_fontname(fontname)
-        ax.xaxis.get_offset_text().set_fontname(fontname)
-        ax.yaxis.get_offset_text().set_fontname(fontname)
-        for label in ax.get_xticklabels() + ax.get_yticklabels():
-            label.set_fontname(fontname)
-
-        legend = ax.get_legend()
-        if legend is not None:
-            for text in legend.get_texts():
-                text.set_fontname(fontname)
-
-    for text in fig.findobj(match=Text):
-        text.set_fontname(fontname)
+    plot.apply_plot_font(fig)
 
 
 def _normalize_panels(panels):
@@ -255,7 +227,7 @@ def show_overview(tint, panels=None):
     >>> maven.show_overview(tint, ["B", "swia_omni"])
     >>> maven.show_overview(tint, ["B", "swia_omni", "swea_omni", "swia_density"])
     """
-    _configure_times_font()
+    plot.configure_plot_font()
 
     panel_names = _normalize_panels(panels)
     n_panels = len(panel_names)
@@ -281,6 +253,6 @@ def show_overview(tint, panels=None):
             ax.set_xlabel("")
         plot.set_axis(ax, fontsize=12, tick_fontsize=12, label_fontsize=13, grid=False)
 
-    _apply_times_font(fig)
+    _apply_overview_font(fig)
 
     return fig

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm, TwoSlopeNorm
 from typing import Optional, Sequence, Dict, Any
 from .add_colorbar import add_colorbar
+from .fonts import apply_plot_font, configure_plot_font
 
 def plot_pcolor(
     ax: Optional[plt.Axes],
@@ -75,6 +76,8 @@ def plot_pcolor(
     out : dict
         {"ax": ax, "pcm": pcm, "cbar": cbar or None}
     """
+    configure_plot_font()
+
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 5))
 
@@ -148,6 +151,7 @@ def plot_pcolor(
         if cbar_label:
             cbar.set_label(cbar_label)
     ax.tick_params(axis='both', direction='in')
+    apply_plot_font(ax)
 
     return ax, pcm, cbar
 

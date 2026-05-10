@@ -26,6 +26,7 @@ set_axis(ax, yscale='linear')            # now override to linear
 
 from typing import Iterable, Optional, Sequence, Tuple, Union
 import matplotlib.pyplot as plt
+from .fonts import apply_plot_font, get_plot_font
 
 Number = Union[int, float]
 
@@ -59,7 +60,7 @@ def set_axis(
     which_spines: Iterable[str] = ("left", "bottom", "right", "top"),
     tick_color: Optional[str] = None,
     tick_width: Optional[float] = None,
-    fontname: str = "Times New Roman",
+    fontname: Optional[str] = None,
 ):
     """
     Set common axis properties in a concise way, similar to MATLAB's set(gca, ...) style.
@@ -112,6 +113,7 @@ def set_axis(
     tick_width : float, optional
         Line width for tick marks.
     """
+    font = get_plot_font()
 
     # Axis limits
     if xlim is not None:
@@ -133,11 +135,11 @@ def set_axis(
 
     # Labels
     if xlabel is not None:
-        ax.set_xlabel(xlabel)
+        ax.set_xlabel(xlabel, fontproperties=font)
     if ylabel is not None:
-        ax.set_ylabel(ylabel)
-    ax.xaxis.label.set_fontname(fontname)
-    ax.yaxis.label.set_fontname(fontname)
+        ax.set_ylabel(ylabel, fontproperties=font)
+    ax.xaxis.label.set_fontproperties(font)
+    ax.yaxis.label.set_fontproperties(font)
 
     # Font sizes
     if fontsize is not None:
@@ -173,7 +175,7 @@ def set_axis(
 
     # Title
     if title is not None:
-        ax.set_title(title, fontsize=title_fontsize, fontname=fontname)
+        ax.set_title(title, fontsize=title_fontsize, fontproperties=font)
 
     # Spines (axis lines)
     if spine_color is not None or spine_width is not None:
@@ -219,8 +221,9 @@ def set_axis(
             label.set_fontsize(formatter_fontsize)
 
     for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontname(fontname)
-    ax.title.set_fontname(fontname)
+        label.set_fontproperties(font)
+    ax.title.set_fontproperties(font)
+    apply_plot_font(ax)
 
 
 # Example (optional)

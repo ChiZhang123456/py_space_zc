@@ -32,6 +32,9 @@ from .hist2d import hist2d
 from .hist1d import hist1d
 from .bar1d import bar1d
 from .connect_axes import connect_axes
+from .fonts import apply_plot_font, configure_plot_font, get_plot_font
+
+configure_plot_font()
 
 __all__ = [
     "plot_line",
@@ -58,4 +61,7 @@ __all__ = [
     "hist1d",
     "bar1d",
     "connect_axes",
+    "apply_plot_font",
+    "configure_plot_font",
+    "get_plot_font",
 ]

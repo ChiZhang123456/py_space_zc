@@ -18,12 +18,12 @@ The package is research oriented and currently in active development.
 
 ## Plot Font
 
-Package plotting helpers use Roboto regular as the default font through `pyfonts`:
+Package plotting helpers use Arial regular as the default font:
 
 ```python
-from pyfonts import load_google_font
+from py_space_zc import plot
 
-font = load_google_font("Roboto", weight="regular")
+font = plot.get_plot_font()
 ```
 
 The shared plotting utilities configure Matplotlib with this font automatically, including axis labels, tick labels, titles, legends, colorbar labels, and math text where possible.
@@ -59,7 +59,6 @@ Core dependencies are declared in `setup.py`. They include:
 - `matplotlib`, `cartopy`, `pyvista`
 - `spacepy`, `cdflib`, `spiceypy`, `pyrfu`
 - `astropy`, `h5py`, `numba`, `tqdm`, `requests`
-- `pyfonts` for loading the package plotting font
 - `pyshtools`, `pymagglobal`
 - `irfpy` for Venus Express tools
 

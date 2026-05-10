@@ -49,7 +49,6 @@ setup(
         "pyrfu",
         "pyshtools",
         "python-dateutil",
-        "pyfonts",
         "pyvista",
         "requests",
         "scipy",

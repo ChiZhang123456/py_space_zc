@@ -1,23 +1,17 @@
-from functools import lru_cache
 from typing import Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 from matplotlib.text import Text
-from pyfonts import load_google_font
 
 
-FONT_FAMILY = "Roboto"
+FONT_FAMILY = "Arial"
 FONT_WEIGHT = "regular"
 
 
-@lru_cache(maxsize=1)
 def get_plot_font():
     """Return the package-wide plotting font."""
-    try:
-        return load_google_font(FONT_FAMILY, weight=FONT_WEIGHT)
-    except Exception:
-        return FontProperties(family=FONT_FAMILY, weight=FONT_WEIGHT)
+    return FontProperties(family=FONT_FAMILY, weight=FONT_WEIGHT)
 
 
 def configure_plot_font(base_size: float = 12):

@@ -142,6 +142,24 @@ _PANEL_PLOTTERS = {
     "d1_flux": _plot_d1_flux,
 }
 
+NO_DATA_LABELS = {
+    "B": "No MAG data",
+    "B_high": "No MAG data",
+    "B_mse": "No MAG data",
+    "swia_omni": "No SWIA data",
+    "swia_density": "No SWIA data",
+    "swia_velocity": "No SWIA data",
+    "swia_pad": "No SWIA data",
+    "swea_omni": "No SWEA data",
+    "swea_pad": "No SWEA data",
+    "sta_H": "No STATIC C6 data",
+    "sta_O": "No STATIC C6 data",
+    "sta_O2": "No STATIC C6 data",
+    "sta_c8": "No STATIC C8 data",
+    "sta_density": "No STATIC density data",
+    "d1_flux": "No STATIC D1 data",
+}
+
 
 def _apply_overview_font(fig):
     """Force all axes, titles, labels, ticks, colorbars, and legends to use one font."""
@@ -157,6 +175,10 @@ def _show_no_data(ax, message="No data"):
         fontsize=14,
     )
     plot.set_axis(ax, grid=False, show_xticklabels=False, show_yticklabels=False)
+
+
+def _no_data_label(name):
+    return NO_DATA_LABELS.get(name, "No data")
 
 
 def _remove_new_axes(fig, known_axes):
@@ -226,7 +248,7 @@ def _plot_trajectory(ax_left, tint):
     except Exception:
         _remove_new_axes(fig, known_axes)
         for ax in ax_left:
-            _show_no_data(ax)
+            _show_no_data(ax, "No MAG data")
 
 
 def show_overview(tint, panels=None, base_size=12):
@@ -277,7 +299,7 @@ def show_overview(tint, panels=None, base_size=12):
             _PANEL_PLOTTERS[name](ax, tint)
         except Exception:
             _remove_new_axes(fig, known_axes)
-            _show_no_data(ax)
+            _show_no_data(ax, _no_data_label(name))
         if i == 0:
             plot.add_time_title(
                 ax, tint, "yyyy/mm/dd HH:MM - HH:MM",

@@ -51,8 +51,13 @@ def int_sph_dist(vdf, speed, phi, theta, speed_grid, **kwargs):
 
     # Azimuthal and elevation angles steps. Assumed to be constant
     # if not provided.
-    d_phi = np.abs(np.median(np.diff(phi))) * np.ones_like(phi)
-    d_phi = kwargs.get("d_phi", d_phi)
+    d_phi = kwargs.get("d_phi", None)
+    if d_phi is None:
+        d_phi = np.abs(np.median(np.diff(phi))) * np.ones_like(phi)
+    elif np.isscalar(d_phi):
+        d_phi = float(d_phi) * np.ones_like(phi)
+    else:
+        d_phi = np.asarray(d_phi, dtype=np.float64)
 
     # Check if user provided d_theta
     d_theta_in = kwargs.get("d_theta", None)

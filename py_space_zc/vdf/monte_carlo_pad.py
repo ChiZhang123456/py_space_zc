@@ -61,6 +61,24 @@ from pyrfu.pyrf.time_clip import time_clip
 from pyrfu.pyrf.ts_scalar import ts_scalar
 
 
+def _get_vdf_attr(vdf, *names):
+    for name in names:
+        if name in vdf.attrs:
+            return vdf.attrs[name]
+        if hasattr(vdf, "data") and name in vdf.data.attrs:
+            return vdf.data.attrs[name]
+    return None
+
+
+def _select_time_bin_attr(arr, i_t, n_t):
+    if arr is None:
+        return None
+    arr = np.asarray(arr)
+    if arr.ndim >= 1 and arr.shape[0] == n_t:
+        return arr[i_t]
+    return arr
+
+
 @numba.jit(cache=True, nogil=True, parallel=True, nopython=True)
 def monte_carlo_pad(
     vdf, v, phi, theta,
@@ -122,7 +140,7 @@ def monte_carlo_pad(
                 c_ijk = dtau_ijk / n_mc_ijk
 
                 for _ in range(n_mc_ijk):
-                    v_mc = v[i] - np.random.random() * d_v[i] - d_v_m[0]
+                    v_mc = v[i] - np.random.random() * d_v[i] - d_v_m[i]
                     phi_mc = phi[j] + (np.random.random() - 0.5) * d_phi[j]
                     theta_mc = th + (np.random.random() - 0.5) * dth
 
@@ -156,17 +174,36 @@ def _sph_dist(vdf, speed, phi, theta, vpar_grid, vperp_grid, b_vec, **kwargs):
     v_lim = np.array(kwargs.get("v_lim", [-np.inf, np.inf]), dtype=np.float64)
     a_lim = np.deg2rad(np.array(kwargs.get("a_lim", [-180.0, 180.0]), dtype=np.float64))
 
-    d_phi = np.abs(np.median(np.diff(phi))) * np.ones_like(phi)
+    d_phi = kwargs.get("d_phi", None)
+    if d_phi is None:
+        d_phi = np.abs(np.median(np.diff(phi))) * np.ones_like(phi)
+    elif np.isscalar(d_phi):
+        d_phi = float(d_phi) * np.ones_like(phi)
+    else:
+        d_phi = np.asarray(d_phi, dtype=np.float64)
 
-    if theta.ndim == 1:
-        d_theta = np.abs(np.median(np.diff(np.sort(theta)))) * np.ones_like(theta)
-    elif theta.ndim == 2:
-        d_theta = np.zeros_like(theta)
-        for i in range(theta.shape[0]):
-            d_theta[i, :] = np.abs(np.median(np.diff(np.sort(theta[i, :]))))
+    d_theta = kwargs.get("d_theta", None)
+    if d_theta is None:
+        if theta.ndim == 1:
+            d_theta = np.abs(np.median(np.diff(np.sort(theta)))) * np.ones_like(theta)
+        elif theta.ndim == 2:
+            d_theta = np.zeros_like(theta)
+            for i in range(theta.shape[0]):
+                d_theta[i, :] = np.abs(np.median(np.diff(np.sort(theta[i, :]))))
+    elif np.isscalar(d_theta):
+        d_theta = float(d_theta) * np.ones_like(theta)
+    else:
+        d_theta = np.asarray(d_theta, dtype=np.float64)
 
-    d_v = np.gradient(speed)
-    d_v_m = np.gradient(speed) / 2.0
+    speed_edges = kwargs.get("speed_edges", None)
+    if speed_edges is None:
+        d_v = np.abs(np.gradient(speed))
+        d_v_m = d_v / 2.0
+    else:
+        speed_edges = np.asarray(speed_edges, dtype=np.float64)
+        d_v_m = speed - speed_edges[:-1]
+        d_v_p = speed_edges[1:] - speed
+        d_v = d_v_m + d_v_p
 
     # Build grid edges
     def make_edges(grid):
@@ -178,6 +215,8 @@ def _sph_dist(vdf, speed, phi, theta, vpar_grid, vperp_grid, b_vec, **kwargs):
 
     vpar_edges = make_edges(vpar_grid)
     vperp_edges = make_edges(vperp_grid)
+    if vperp_grid[0] >= 0.0:
+        vperp_edges[0] = 0.0
 
     # Area element in cylindrical coordinates: 2π * vperp * dvperp * dvpar
     vperp_mid = 0.5 * (vperp_edges[:-1] + vperp_edges[1:])
@@ -324,6 +363,34 @@ def par_perp_reduced_dis(vdf, bdmpa,
         theta = np.deg2rad(theta - 90.0)
 
         options = dict(n_mc=n_mc, weight=weight, v_lim=v_lim, a_lim=a_lim)
+        d_phi = kwargs.get("d_phi", None)
+        if d_phi is None:
+            d_phi = _get_vdf_attr(vdf, "dphi", "swia_dphi")
+        if d_phi is not None:
+            d_phi = np.deg2rad(np.asarray(d_phi, dtype=np.float64))
+
+        d_theta = kwargs.get("d_theta", None)
+        if d_theta is None:
+            dtheta_all = _get_vdf_attr(vdf, "dtheta", "deltatheta", "swia_dtheta_elevation")
+            d_theta = _select_time_bin_attr(dtheta_all, i_t, n_t)
+        if d_theta is not None:
+            d_theta = np.deg2rad(np.asarray(d_theta, dtype=np.float64))
+
+        speed_edges = kwargs.get("speed_edges", None)
+        if speed_edges is None:
+            de_over_e = _get_vdf_attr(vdf, "de_over_e", "swia_de_over_e")
+            if de_over_e is not None:
+                d_e = energy * float(de_over_e)
+                e0 = np.maximum(energy - 0.5 * d_e, 0.0)
+                e1 = np.maximum(energy + 0.5 * d_e, 0.0)
+                g0 = 1 + electron_volt * e0 / (m_p * speed_of_light**2)
+                g1 = 1 + electron_volt * e1 / (m_p * speed_of_light**2)
+                speed_edges = np.empty(len(speed) + 1, dtype=np.float64)
+                speed_edges[:-1] = speed_of_light * np.sqrt(1 - 1 / g0**2)
+                speed_edges[-1] = speed_of_light * np.sqrt(1 - 1 / g1[-1]**2)
+
+        options = dict(n_mc=n_mc, weight=weight, v_lim=v_lim, a_lim=a_lim,
+                       d_phi=d_phi, d_theta=d_theta, speed_edges=speed_edges)
         tmp = _sph_dist(f_3d, speed, phi, theta, vpar_grid, vperp_grid, bvec, **options)
         f_g[i_t, ...] = tmp["f"]
 

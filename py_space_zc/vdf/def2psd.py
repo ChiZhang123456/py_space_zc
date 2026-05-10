@@ -19,7 +19,7 @@ def _mass_ratio(inp):
     if inp.attrs["species"].lower() in ["ions", "ion", "protons", "proton","h","h+"]:
         mass_ratio = 1
         
-    elif inp.attrs["species"].lower() in ["alphas", "alpha", "helium", "he","he+"]:
+    elif inp.attrs["species"].lower() in ["alphas", "alpha", "helium", "he", "he+", "he++"]:
         mass_ratio = 4
         
     elif inp.attrs["species"].lower() in ["electrons", "e"]:
@@ -86,7 +86,7 @@ def def2psd(inp: Union[DataArray, Dataset]) -> Union[DataArray, Dataset]:
         energy_mat = np.tile(energy[:, :, None, None], (1, 1, *tmp_data.shape[2:]))
         tmp_data /= energy_mat**2
         out = inp.copy()
-        out.data.data = np.squeeze(tmp_data)
+        out.data.data = tmp_data
         out.data.attrs["UNITS"] = "s^3/m^6"
         
     elif isinstance(inp, DataArray):

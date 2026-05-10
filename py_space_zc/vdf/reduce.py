@@ -23,6 +23,37 @@ from pyrfu.pyrf.time_clip import time_clip
 from pyrfu.pyrf.ts_scalar import ts_scalar
 from .int_sph_dist import int_sph_dist
 
+
+def _get_vdf_attr(vdf, *names):
+    for name in names:
+        if name in vdf.attrs:
+            return vdf.attrs[name]
+        if hasattr(vdf, "data") and name in vdf.data.attrs:
+            return vdf.data.attrs[name]
+    return None
+
+
+def _select_time_bin_attr(arr, i_t, n_t):
+    if arr is None:
+        return None
+    arr = np.asarray(arr)
+    if arr.ndim >= 1 and arr.shape[0] == n_t:
+        return arr[i_t]
+    return arr
+
+
+def _energy_to_speed_edges(energy, mass, de_over_e):
+    d_e = energy * float(de_over_e)
+    e0 = np.maximum(energy - 0.5 * d_e, 0.0)
+    e1 = np.maximum(energy + 0.5 * d_e, 0.0)
+    gamma0 = 1 + electron_volt * e0 / (mass * speed_of_light**2)
+    gamma1 = 1 + electron_volt * e1 / (mass * speed_of_light**2)
+    edges = np.empty(len(energy) + 1, dtype=np.float64)
+    edges[:-1] = speed_of_light * np.sqrt(1 - 1 / gamma0**2)
+    edges[-1] = speed_of_light * np.sqrt(1 - 1 / gamma1[-1]**2)
+    return edges
+
+
 def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
     r"""Reduces (integrates) 3D distribution to 1D (line) or 2D (plane).
     Parameters
@@ -250,6 +281,25 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
         else:
             pass
 
+        d_phi = kwargs.get("d_phi", None)
+        if d_phi is None:
+            d_phi = _get_vdf_attr(vdf, "dphi", "swia_dphi")
+        if d_phi is not None:
+            d_phi = np.deg2rad(np.asarray(d_phi, dtype=np.float64))
+
+        d_theta = kwargs.get("d_theta", None)
+        if d_theta is None:
+            dtheta_all = _get_vdf_attr(vdf, "dtheta", "deltatheta", "swia_dtheta_elevation")
+            d_theta = _select_time_bin_attr(dtheta_all, i_t, n_t)
+        if d_theta is not None:
+            d_theta = np.deg2rad(np.asarray(d_theta, dtype=np.float64))
+
+        speed_edges_i = speed_grid_edges
+        if speed_edges_i is None:
+            de_over_e = _get_vdf_attr(vdf, "de_over_e", "swia_de_over_e")
+            if de_over_e is not None:
+                speed_edges_i = _energy_to_speed_edges(energy, m_p, de_over_e)
+
         options = {
             "xyz": xyz_ts[i_t, ...],
             "n_mc": n_mc,
@@ -259,6 +309,9 @@ def reduce(vdf, xyz, dim: str = "1d", base: str = "cart", **kwargs):
             "projection_dim": dim,
             "projection_base": base,
             "speed_grid_edges": speed_grid_edges,
+            "speed_edges": speed_edges_i,
+            "d_phi": d_phi,
+            "d_theta": d_theta,
         }
 
         tmpst = int_sph_dist(f_3d, speed, phi, theta, speed_grid, **options)

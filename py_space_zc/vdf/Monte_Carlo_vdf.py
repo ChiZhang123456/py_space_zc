@@ -74,7 +74,7 @@ def _mc_pol_1d(
                 # ---------------------------------------------------------
                 for _ in range(n_mc_ijk):
                     # Random offsets within each bin
-                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[0]
+                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[i]
                     d_phi_mc = (np.random.random() - 0.5) * d_phi[j]
                     d_theta_mc = (np.random.random() - 0.5) * dth
 
@@ -171,7 +171,7 @@ def _mc_cart_3d(
 
                 for _ in range(n_mc_ijk):
                     # Monte Carlo perturbation
-                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[0]
+                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[i]
                     d_phi_mc = (np.random.random() - 0.5) * d_phi[j]
                     d_theta_mc = (np.random.random() - 0.5) * dth
 
@@ -259,7 +259,7 @@ def _mc_cart_2d(
 
                 for _ in range(n_mc_ijk):
                     # Random offset sampling within bin
-                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[0]
+                    d_v_mc = -np.random.random() * d_v[i] - d_v_m[i]
                     d_phi_mc = (np.random.random() - 0.5) * d_phi[j]
                     d_theta_mc = (np.random.random() - 0.5) * dth
 

@@ -84,6 +84,8 @@ def get_data(tint, var):
     # Define base path for MAVEN data
     if var == 'topo':
         var = 'swea_topo'
+    if var == 'swia_fine_srvy_3d':
+        var = 'swia_3d_fine'
     base_path_mvn = get_base_path() 
     start_time, end_time = np.datetime64(tint[0]), np.datetime64(tint[1])
 
@@ -480,9 +482,15 @@ def get_data(tint, var):
             'time': np.array([], dtype='datetime64[ns]'),
             'energy': np.empty((0, nenergy)),
             'DEF': np.empty((0, nenergy, nphi, ntheta)),
-            'phi':np.array([], dtype=np.float64),
-            'theta':np.array([], dtype=np.float64),
+            'theta': np.empty((0, nenergy, ntheta)),
+            'dtheta': np.empty((0, nenergy, ntheta)),
+            'estep_first': np.array([], dtype=np.uint8),
+            'dstep_first': np.array([], dtype=np.uint8),
+            'atten_state': np.array([], dtype=float),
         }
+        phi = None
+        dphi = None
+        de_over_e = None
         for date_file in dates_to_read:
             year, month, day = year_month_day(date_file)
             # the format of CDF file
@@ -492,16 +500,38 @@ def get_data(tint, var):
             data = swia.read_swia_3d(filename)
             res['time'] = np.concatenate((res['time'], data['time']))
             res['DEF'] = np.vstack((res['DEF'], data['DEF']))
+            res['energy'] = np.vstack((res['energy'], data['energy']))
+            res['theta'] = np.vstack((res['theta'], data['theta']))
+            res['dtheta'] = np.vstack((res['dtheta'], data['dtheta']))
+            res['estep_first'] = np.concatenate((res['estep_first'], data['estep_first']))
+            res['dstep_first'] = np.concatenate((res['dstep_first'], data['dstep_first']))
+            res['atten_state'] = np.concatenate((res['atten_state'], data['atten_state']))
+            phi = data['phi']
+            dphi = data['dphi']
+            de_over_e = data['de_over_e']
 
-        time, DEF = tint_data(res["time"],
-                              np.datetime64(start_time),  np.datetime64(end_time),
-                              res["DEF"])
+        time, DEF, energy, theta, dtheta, estep_first, dstep_first, atten_state = tint_data(
+            res["time"],
+            np.datetime64(start_time), np.datetime64(end_time),
+            res["DEF"], res["energy"], res["theta"], res["dtheta"],
+            res["estep_first"], res["dstep_first"], res["atten_state"]
+        )
 
-        swia_vdf = create_pdist_skymap(time, data["energy"],
-                                       DEF, data["phi"], data["theta"],
+        swia_vdf = create_pdist_skymap(time, energy,
+                                       DEF, phi, theta,
                                        Units="keV/(cm^2 s sr keV)",
                                        species="H+",
-                                       direction_is_velocity=True, )
+                                       direction_is_velocity=True,
+                                       deltatheta=dtheta)
+        swia_vdf.attrs["swia_phi_elevation_frame"] = phi
+        swia_vdf.attrs["swia_dphi"] = dphi
+        swia_vdf.attrs["swia_theta_elevation"] = theta
+        swia_vdf.attrs["swia_dtheta_elevation"] = dtheta
+        swia_vdf.attrs["swia_de_over_e"] = de_over_e
+        swia_vdf.attrs["swia_estep_first"] = estep_first
+        swia_vdf.attrs["swia_dstep_first"] = dstep_first
+        swia_vdf.attrs["swia_atten_state"] = atten_state
+        swia_vdf.attrs["swia_mode"] = "fine_survey"
         return swia_vdf
 
     # %% read the swia moment data made by Chi Zhang

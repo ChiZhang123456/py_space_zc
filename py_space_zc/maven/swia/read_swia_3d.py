@@ -38,6 +38,44 @@ def average_pairs_2d(arr):
     )
 
 
+def _select_fine_lookup_tables(energy, theta, theta_atten, estep_first,
+                               dstep_first, atten_state):
+    """Select the 48 energy and 12 deflector bins used by each fine packet."""
+    energy = np.asarray(energy, dtype=float)
+    theta = np.asarray(theta, dtype=float)
+    theta_atten = np.asarray(theta_atten, dtype=float)
+    estep_first = np.asarray(estep_first, dtype=int)
+    dstep_first = np.asarray(dstep_first, dtype=int)
+    atten_state = np.asarray(atten_state, dtype=float)
+
+    if theta.shape == (24, 96):
+        theta = theta.T
+    if theta_atten.shape == (24, 96):
+        theta_atten = theta_atten.T
+
+    nt = estep_first.size
+    energy_out = np.empty((nt, 48), dtype=float)
+    theta_out = np.empty((nt, 48, 12), dtype=float)
+    dtheta_out = np.empty((nt, 48, 12), dtype=float)
+
+    for i in range(nt):
+        e0 = estep_first[i]
+        d0 = dstep_first[i]
+        th_table = theta if atten_state[i] <= 1 else theta_atten
+
+        energy_out[i, :] = energy[e0:e0 + 48]
+        theta_i = th_table[e0:e0 + 48, d0:d0 + 12]
+        theta_out[i, :, :] = theta_i
+
+        dtheta_i = np.empty_like(theta_i)
+        dtheta_i[:, 1:-1] = (theta_i[:, 2:] - theta_i[:, :-2]) / 2.0
+        dtheta_i[:, 0] = theta_i[:, 1] - theta_i[:, 0]
+        dtheta_i[:, -1] = theta_i[:, -1] - theta_i[:, -2]
+        dtheta_out[i, :, :] = dtheta_i
+
+    return energy_out, theta_out, dtheta_out
+
+
 def read_swia_3d(filename_swia_3d):
     """
     Read and process MAVEN SWIA 3D data from a CDF file.
@@ -82,7 +120,12 @@ def read_swia_3d(filename_swia_3d):
                 "energy_fine",
                 "diff_en_fluxes",
                 "theta_fine",
+                "theta_atten_fine",
                 "phi_fine",
+                "estep_first",
+                "dstep_first",
+                "atten_state",
+                "de_over_e_fine",
             ]
             mode = "fine"
 
@@ -91,11 +134,17 @@ def read_swia_3d(filename_swia_3d):
 
         is_time = [1] + [0] * (len(val_names) - 1)
 
-        time, energy, DEF, theta, phi = get_cdf_var(
+        values = get_cdf_var(
             cdf_filename=filename_swia_3d,
             variable_name=val_names,
             istime=is_time
         )
+
+        if mode == "fine":
+            (time, energy, DEF, theta, theta_atten, phi, estep_first,
+             dstep_first, atten_state, de_over_e) = values
+        else:
+            time, energy, DEF, theta, phi = values
 
         energy = np.asarray(energy)
         DEF = np.asarray(DEF)
@@ -108,19 +157,22 @@ def read_swia_3d(filename_swia_3d):
         theta = np.transpose(theta, (1, 0))   #   [n_energy, n_theta]
 
         if mode == "fine":
-            # fine:
-            # energy: (96,)      -> (48,)
-            # theta : (96,24)    -> (48,12)
-            # DEF   : already [nt,48,10,12]
-            energy_table = average_pairs_1d(energy)
-            theta_table = average_pairs_2d(theta)
+            energy_table, theta_table, dtheta_table = _select_fine_lookup_tables(
+                energy, theta, theta_atten, estep_first, dstep_first, atten_state
+            )
 
             res = {
                 "time": time,
-                "energy": np.flip(energy_table, axis=0),
+                "energy": np.flip(energy_table, axis=1),
                 "DEF": np.flip(DEF, axis=1),
-                "theta": np.flip(theta_table, axis=0),
+                "theta": np.flip(theta_table, axis=1),
+                "dtheta": np.flip(dtheta_table, axis=1),
                 "phi": phi,
+                "dphi": np.full(phi.shape, 4.5, dtype=float),
+                "de_over_e": float(np.asarray(de_over_e)),
+                "estep_first": estep_first,
+                "dstep_first": dstep_first,
+                "atten_state": atten_state,
             }
 
         elif mode == "coarse":

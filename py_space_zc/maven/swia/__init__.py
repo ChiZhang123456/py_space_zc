@@ -4,6 +4,7 @@ from .reduced_swia_1d import reduced_swia_1d
 from .get_pad import get_pad
 from .vpar_perp_plane import vpar_perp_plane
 from .moment_swia_3d import moment_swia_3d
+from .moment_swia_fine_h_he import moment_swia_fine_h_he
 from .vdf_overview import vdf_overview
 
 __all__ = ["read_swia_3d",
@@ -11,6 +12,7 @@ __all__ = ["read_swia_3d",
            "get_pad",
            'vpar_perp_plane',
            'moment_swia_3d',
+           'moment_swia_fine_h_he',
            'vdf_overview',
            'reduced_swia_1d',
            ]

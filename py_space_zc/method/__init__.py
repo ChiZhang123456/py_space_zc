@@ -17,8 +17,9 @@ from .walen_test import walen_test
 from .welch_psd import psd_welch
 from .welch_psd import psd_welch_sliding
 from .fac import fac
+from .hilbert_envelope import hilbert_envelope
 from .autocorr import autocorr
-from .icw_detection import detect_pickup_icw, detect_pcw_svd, detect_pcw_svd_5min
+from .icw_detection import detect_pcw_svd_psd_criteria, evaluate_pcw_svd_psd_criteria_window
 from .pui_birth_curve import (
     pui_birth_curve,
     pui_birth_curve_one_species,
@@ -39,10 +40,10 @@ __all__ = [
     "psd_welch",
     "psd_welch_sliding",
     "fac",
+    "hilbert_envelope",
     "autocorr",
-    "detect_pickup_icw",
-    "detect_pcw_svd",
-    "detect_pcw_svd_5min",
+    "detect_pcw_svd_psd_criteria",
+    "evaluate_pcw_svd_psd_criteria_window",
     "pui_birth_curve",
     "pui_birth_curve_one_species",
     "plot_beta_anisotropy_instability",

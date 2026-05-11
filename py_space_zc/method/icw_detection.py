@@ -61,9 +61,9 @@ class PCWSVDCriteria:
     period_range_s: tuple[float, float] = (1.0, 50.0)
     gyro_band_low_factor: float = 0.7
     gyro_band_high_factor: float = 1.3
-    transverse_ratio_min: float = 3.0
-    ellipticity_max: float = -0.55
-    wave_angle_max_deg: float = 35.0
+    transverse_ratio_min: float = 1.5
+    ellipticity_max: float = -0.50
+    wave_angle_max_deg: float = 45.0
     planarity_min: float = 0.45
     narrowband_prominence_min: float = 2.0
     median_narrowband_prominence_min: float = 8.0
@@ -1808,19 +1808,339 @@ def plot_pcw_svd_5min_detection(Bwave: Any, result: dict[str, Any], Bplot: Any |
     return fig
 
 
+def _band_nanmean(values: np.ndarray, freq: np.ndarray, f_low: float, f_high: float) -> float:
+    band = (freq >= f_low) & (freq <= f_high)
+    if not np.any(band):
+        return np.nan
+    data = np.asarray(values)[..., band]
+    if not np.any(np.isfinite(data)):
+        return np.nan
+    return float(np.nanmean(data))
+
+
+def _time_band_nanmean(values: np.ndarray, freq: np.ndarray, f_low: float, f_high: float) -> np.ndarray:
+    band = (freq >= f_low) & (freq <= f_high)
+    out = np.full(np.asarray(values).shape[0], np.nan, dtype=float)
+    if not np.any(band):
+        return out
+    data = np.asarray(values, dtype=float)[:, band]
+    good = np.any(np.isfinite(data), axis=1)
+    out[good] = np.nanmean(data[good], axis=1)
+    return out
+
+
+def _longest_true_duration_s(mask: np.ndarray, time: np.ndarray) -> float:
+    mask = np.asarray(mask, dtype=bool)
+    if mask.size == 0 or not np.any(mask):
+        return 0.0
+    time = np.asarray(time).astype("datetime64[ns]")
+    if time.size < 2:
+        return 0.0
+    dt_s = np.nanmedian(np.diff(time).astype("timedelta64[ns]").astype(float)) * 1.0e-9
+    if not np.isfinite(dt_s) or dt_s <= 0:
+        dt_s = 0.0
+    best = 0
+    current = 0
+    for item in mask:
+        if item:
+            current += 1
+            best = max(best, current)
+        else:
+            current = 0
+    return float(best * dt_s)
+
+
+def evaluate_pcw_svd_psd_criteria_window(
+    wave_res: dict[str, Any],
+    start: Any,
+    stop: Any,
+    b0_vec_nt: np.ndarray,
+    ion: str | tuple[float, float] = "H+",
+    *,
+    min_duration_gyroperiods: float = 3.0,
+) -> dict[str, Any]:
+    """Evaluate the new PCW PSD criteria for one time window using precomputed SVD_B output."""
+    start = np.datetime64(start)
+    stop = np.datetime64(stop)
+    b0_vec = np.asarray(b0_vec_nt, dtype=float)
+    b0_abs_nt = float(np.linalg.norm(b0_vec))
+    if b0_vec.size != 3 or not np.isfinite(b0_abs_nt) or b0_abs_nt <= 0:
+        return {
+            "is_pcw": False,
+            "reason": "bad_b0",
+            "theta_kb_deg": np.nan,
+            "ellipticity": np.nan,
+            "psd_bperp_0p8_1p2_fci": np.nan,
+            "psd_bpara_0p8_1p2_fci": np.nan,
+        }
+
+    mass, charge = _ion_mass_charge(ion)
+    fci_hz = abs(charge) * b0_abs_nt * 1e-9 / (2.0 * np.pi * mass)
+    tci_s = 1.0 / fci_hz if fci_hz > 0 else np.nan
+
+    svd_time = np.asarray(wave_res["Bperp"].time.data)
+    smask = (svd_time >= start) & (svd_time < stop)
+    freq = np.asarray(wave_res["Bperp"].coords["frequency"].data, dtype=float)
+    bperp = np.asarray(wave_res["Bperp"].values, dtype=float)[smask]
+    bpara = np.asarray(wave_res["Bpara"].values, dtype=float)[smask]
+    theta = np.asarray(wave_res["theta"].values, dtype=float)[smask]
+    ellipticity = np.asarray(wave_res["ellipticity"].values, dtype=float)[smask]
+    local_time = svd_time[smask]
+
+    low1, high1 = 0.6 * fci_hz, 0.8 * fci_hz
+    low_main, high_main = 0.8 * fci_hz, 1.2 * fci_hz
+    low2, high2 = 1.2 * fci_hz, 1.4 * fci_hz
+
+    psd_bperp_low = _band_nanmean(bperp, freq, low1, high1)
+    psd_bperp_main = _band_nanmean(bperp, freq, low_main, high_main)
+    psd_bperp_high = _band_nanmean(bperp, freq, low2, high2)
+    psd_bpara_main = _band_nanmean(bpara, freq, low_main, high_main)
+    theta_main = _band_nanmean(theta, freq, low_main, high_main)
+    ellipticity_main = _band_nanmean(ellipticity, freq, low_main, high_main)
+
+    bperp_low_t = _time_band_nanmean(bperp, freq, low1, high1)
+    bperp_main_t = _time_band_nanmean(bperp, freq, low_main, high_main)
+    bperp_high_t = _time_band_nanmean(bperp, freq, low2, high2)
+    bpara_main_t = _time_band_nanmean(bpara, freq, low_main, high_main)
+    theta_t = _time_band_nanmean(theta, freq, low_main, high_main)
+    ell_t = _time_band_nanmean(ellipticity, freq, low_main, high_main)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        low_ratio = psd_bperp_main / psd_bperp_low
+        high_ratio = psd_bperp_main / psd_bperp_high
+        para_ratio = psd_bperp_main / psd_bpara_main
+        low_ratio_t = bperp_main_t / bperp_low_t
+        high_ratio_t = bperp_main_t / bperp_high_t
+        para_ratio_t = bperp_main_t / bpara_main_t
+
+    good_t = (
+        np.isfinite(low_ratio_t)
+        & np.isfinite(high_ratio_t)
+        & np.isfinite(para_ratio_t)
+        & (low_ratio_t >= 1.5)
+        & (high_ratio_t >= 1.5)
+        & (para_ratio_t >= 2.0)
+        & (theta_t <= 45.0)
+        & (ell_t < -0.6)
+    )
+    continuous_duration_s = _longest_true_duration_s(good_t, local_time)
+    required_duration_s = float(min_duration_gyroperiods * tci_s) if np.isfinite(tci_s) else np.inf
+
+    psd_ok = bool(
+        np.isfinite(low_ratio)
+        and np.isfinite(high_ratio)
+        and np.isfinite(para_ratio)
+        and low_ratio >= 1.5
+        and high_ratio >= 1.5
+        and para_ratio >= 2.0
+    )
+    theta_ok = bool(np.isfinite(theta_main) and theta_main <= 45.0)
+    ellipticity_ok = bool(np.isfinite(ellipticity_main) and ellipticity_main < -0.6)
+    duration_ok = bool(continuous_duration_s >= required_duration_s)
+    is_pcw = bool(psd_ok and theta_ok and ellipticity_ok and duration_ok)
+
+    return {
+        "is_pcw": is_pcw,
+        "is_icw": is_pcw,
+        "reason": "pass" if is_pcw else "criteria_not_met",
+        "b0_abs_nt": b0_abs_nt,
+        "B0x_mso_nT": float(b0_vec[0]),
+        "B0y_mso_nT": float(b0_vec[1]),
+        "B0z_mso_nT": float(b0_vec[2]),
+        "fci_hz": float(fci_hz),
+        "Tci_s": float(tci_s),
+        "band_low_hz": float(low_main),
+        "band_high_hz": float(high_main),
+        "theta_kb_deg": float(theta_main) if np.isfinite(theta_main) else np.nan,
+        "ellipticity": float(ellipticity_main) if np.isfinite(ellipticity_main) else np.nan,
+        "psd_bperp_0p6_0p8_fci": float(psd_bperp_low) if np.isfinite(psd_bperp_low) else np.nan,
+        "psd_bperp_0p8_1p2_fci": float(psd_bperp_main) if np.isfinite(psd_bperp_main) else np.nan,
+        "psd_bperp_1p2_1p4_fci": float(psd_bperp_high) if np.isfinite(psd_bperp_high) else np.nan,
+        "psd_bpara_0p8_1p2_fci": float(psd_bpara_main) if np.isfinite(psd_bpara_main) else np.nan,
+        "perp_main_over_low_ratio": float(low_ratio) if np.isfinite(low_ratio) else np.nan,
+        "perp_main_over_high_ratio": float(high_ratio) if np.isfinite(high_ratio) else np.nan,
+        "perp_over_para_main_ratio": float(para_ratio) if np.isfinite(para_ratio) else np.nan,
+        "continuous_duration_s": continuous_duration_s,
+        "required_duration_s": required_duration_s,
+        "good_svd_samples": int(np.count_nonzero(good_t)),
+        "svd_sample_count": int(np.count_nonzero(smask)),
+        "psd_ok": psd_ok,
+        "theta_ok": theta_ok,
+        "ellipticity_ok": ellipticity_ok,
+        "duration_ok": duration_ok,
+    }
+
+
+def detect_pcw_svd_psd_criteria(
+    Bwave: Any,
+    ion: str | tuple[float, float] = "H+",
+    *,
+    svd_window_length: float = 300.0,
+    svd_overlap: float = 150.0,
+    m_width_coeff: float = 1,
+    nav: int = 12,
+    min_duration_gyroperiods: float = 3.0,
+) -> dict[str, Any]:
+    """
+    Detect PCW in one Bwave segment using PSD, theta_kB, ellipticity, and duration criteria.
+
+    The tested bands are 0.6-0.8 fci, 0.8-1.2 fci, and 1.2-1.4 fci.
+    """
+    time, b_xyz_nt = _extract_bwave_arrays(Bwave)
+    if time.size < 2:
+        return {
+            "is_pcw": False,
+            "reason": "too_few_samples",
+            "theta_kb_deg": np.nan,
+            "ellipticity": np.nan,
+            "psd_bperp_0p8_1p2_fci": np.nan,
+            "psd_bpara_0p8_1p2_fci": np.nan,
+        }
+
+    sample_dt_s = np.nanmedian(np.diff(time.astype("datetime64[ns]")).astype("timedelta64[ns]").astype(float)) * 1.0e-9
+    if not np.isfinite(sample_dt_s) or sample_dt_s <= 0:
+        sample_dt_s = 0.0
+    duration_s = float((time[-1] - time[0]) / np.timedelta64(1, "s")) + float(sample_dt_s)
+    if duration_s < svd_window_length:
+        return {
+            "is_pcw": False,
+            "reason": "shorter_than_svd_window_length",
+            "duration_s": duration_s,
+            "theta_kb_deg": np.nan,
+            "ellipticity": np.nan,
+            "psd_bperp_0p8_1p2_fci": np.nan,
+            "psd_bpara_0p8_1p2_fci": np.nan,
+        }
+
+    b0_vec = np.nanmean(b_xyz_nt, axis=0)
+    b0_abs_nt = float(np.linalg.norm(b0_vec))
+    if not np.isfinite(b0_abs_nt) or b0_abs_nt <= 0:
+        return {
+            "is_pcw": False,
+            "reason": "bad_b0",
+            "theta_kb_deg": np.nan,
+            "ellipticity": np.nan,
+            "psd_bperp_0p8_1p2_fci": np.nan,
+            "psd_bpara_0p8_1p2_fci": np.nan,
+        }
+
+    mass, charge = _ion_mass_charge(ion)
+    fci_hz = abs(charge) * b0_abs_nt * 1e-9 / (2.0 * np.pi * mass)
+    tci_s = 1.0 / fci_hz if fci_hz > 0 else np.nan
+
+    try:
+        from py_space_zc import method
+    except ImportError as exc:
+        raise ImportError("py_space_zc is not available, cannot call method.SVD_B") from exc
+
+    freq_min = max(0.5 * fci_hz, 1.0e-4)
+    freq_max = max(1.5 * fci_hz, freq_min * 1.2)
+    wave_res = method.SVD_B(
+        Bwave.dropna(dim="time") if hasattr(Bwave, "dropna") else Bwave,
+        window_length=svd_window_length,
+        overlap=svd_overlap,
+        freq_range=[freq_min, freq_max],
+        m_width_coeff=m_width_coeff,
+        nav=nav,
+    )
+
+    svd_time = np.asarray(wave_res["Bperp"].time.data)
+    freq = np.asarray(wave_res["Bperp"].coords["frequency"].data, dtype=float)
+    bperp = np.asarray(wave_res["Bperp"].values, dtype=float)
+    bpara = np.asarray(wave_res["Bpara"].values, dtype=float)
+    theta = np.asarray(wave_res["theta"].values, dtype=float)
+    ellipticity = np.asarray(wave_res["ellipticity"].values, dtype=float)
+
+    low1, high1 = 0.6 * fci_hz, 0.8 * fci_hz
+    low_main, high_main = 0.8 * fci_hz, 1.2 * fci_hz
+    low2, high2 = 1.2 * fci_hz, 1.4 * fci_hz
+
+    psd_bperp_low = _band_nanmean(bperp, freq, low1, high1)
+    psd_bperp_main = _band_nanmean(bperp, freq, low_main, high_main)
+    psd_bperp_high = _band_nanmean(bperp, freq, low2, high2)
+    psd_bpara_main = _band_nanmean(bpara, freq, low_main, high_main)
+    theta_main = _band_nanmean(theta, freq, low_main, high_main)
+    ellipticity_main = _band_nanmean(ellipticity, freq, low_main, high_main)
+
+    bperp_low_t = _time_band_nanmean(bperp, freq, low1, high1)
+    bperp_main_t = _time_band_nanmean(bperp, freq, low_main, high_main)
+    bperp_high_t = _time_band_nanmean(bperp, freq, low2, high2)
+    bpara_main_t = _time_band_nanmean(bpara, freq, low_main, high_main)
+    theta_t = _time_band_nanmean(theta, freq, low_main, high_main)
+    ell_t = _time_band_nanmean(ellipticity, freq, low_main, high_main)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        low_ratio_t = bperp_main_t / bperp_low_t
+        high_ratio_t = bperp_main_t / bperp_high_t
+        para_ratio_t = bperp_main_t / bpara_main_t
+        low_ratio = psd_bperp_main / psd_bperp_low
+        high_ratio = psd_bperp_main / psd_bperp_high
+        para_ratio = psd_bperp_main / psd_bpara_main
+
+    good_t = (
+        np.isfinite(low_ratio_t)
+        & np.isfinite(high_ratio_t)
+        & np.isfinite(para_ratio_t)
+        & (low_ratio_t >= 1.5)
+        & (high_ratio_t >= 1.5)
+        & (para_ratio_t >= 2.0)
+        & (theta_t <= 45.0)
+        & (ell_t < -0.6)
+    )
+    continuous_duration_s = _longest_true_duration_s(good_t, svd_time)
+    required_duration_s = float(min_duration_gyroperiods * tci_s) if np.isfinite(tci_s) else np.inf
+
+    psd_ok = bool(
+        np.isfinite(low_ratio)
+        and np.isfinite(high_ratio)
+        and np.isfinite(para_ratio)
+        and low_ratio >= 1.5
+        and high_ratio >= 1.5
+        and para_ratio >= 2.0
+    )
+    theta_ok = bool(np.isfinite(theta_main) and theta_main <= 45.0)
+    ellipticity_ok = bool(np.isfinite(ellipticity_main) and ellipticity_main < -0.6)
+    duration_ok = bool(continuous_duration_s >= required_duration_s)
+    is_pcw = bool(psd_ok and theta_ok and ellipticity_ok and duration_ok)
+
+    return {
+        "is_pcw": is_pcw,
+        "is_icw": is_pcw,
+        "reason": "pass" if is_pcw else "criteria_not_met",
+        "duration_s": duration_s,
+        "b0_abs_nt": b0_abs_nt,
+        "B0x_mso_nT": float(b0_vec[0]),
+        "B0y_mso_nT": float(b0_vec[1]),
+        "B0z_mso_nT": float(b0_vec[2]),
+        "fci_hz": float(fci_hz),
+        "Tci_s": float(tci_s),
+        "band_low_hz": float(low_main),
+        "band_high_hz": float(high_main),
+        "theta_kb_deg": float(theta_main) if np.isfinite(theta_main) else np.nan,
+        "ellipticity": float(ellipticity_main) if np.isfinite(ellipticity_main) else np.nan,
+        "psd_bperp_0p6_0p8_fci": float(psd_bperp_low) if np.isfinite(psd_bperp_low) else np.nan,
+        "psd_bperp_0p8_1p2_fci": float(psd_bperp_main) if np.isfinite(psd_bperp_main) else np.nan,
+        "psd_bperp_1p2_1p4_fci": float(psd_bperp_high) if np.isfinite(psd_bperp_high) else np.nan,
+        "psd_bpara_0p8_1p2_fci": float(psd_bpara_main) if np.isfinite(psd_bpara_main) else np.nan,
+        "perp_main_over_low_ratio": float(low_ratio) if np.isfinite(low_ratio) else np.nan,
+        "perp_main_over_high_ratio": float(high_ratio) if np.isfinite(high_ratio) else np.nan,
+        "perp_over_para_main_ratio": float(para_ratio) if np.isfinite(para_ratio) else np.nan,
+        "continuous_duration_s": continuous_duration_s,
+        "required_duration_s": required_duration_s,
+        "good_svd_samples": int(np.count_nonzero(good_t)),
+        "svd_sample_count": int(good_t.size),
+        "psd_ok": psd_ok,
+        "theta_ok": theta_ok,
+        "ellipticity_ok": ellipticity_ok,
+        "duration_ok": duration_ok,
+        "time": svd_time,
+        "freqs_hz": freq,
+        "wave_res": wave_res,
+    }
+
+
 __all__ = [
-    "ICWCriteria",
-    "PCWSVDCriteria",
-    "detect_pickup_icw",
-    "detect_pickup_icw_array",
-    "detect_pcw_svd",
-    "detect_pcw_svd_5min",
-    "pcw_events_from_5min_rows",
-    "plot_icw_detection",
-    "plot_pcw_svd_detection",
-    "plot_pcw_svd_5min_detection",
+    "evaluate_pcw_svd_psd_criteria_window",
+    "detect_pcw_svd_psd_criteria",
     "read_sw_interval_list",
-    "sliding_pickup_icw_detection",
-    "save_icw_rows",
-    "plot_icw_window_diagnostic",
 ]

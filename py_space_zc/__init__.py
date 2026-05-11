@@ -61,7 +61,7 @@ from .delta_angle import delta_angle
 from .KH_condition import KH_condition
 from .time_eval import time_eval
 from .background_B import background_B
-from .plot_Bwave_svd import plot_Bwave_svd
+from .plot_Bwave_svd import plot_Bwave_svd, plot_Bwave_SVD
 from .pressure import pressure
 from .gyro_information import gyro_information
 from .rotate_tensor import rotate_tensor
@@ -115,7 +115,7 @@ __all__ = [
     "ts_tensor_xyz", "ts_append",
 
     # Physics methods
-    "pad_split_energy", "KH_condition", "plot_Bwave_svd",
+    "pad_split_energy", "KH_condition", "plot_Bwave_svd", "plot_Bwave_SVD",
 
     'pressure', 'gyro_information', 'rotate_tensor', "xyz_2_lonlat","lonlat_2_xyz",
     'hybrid_alfven_speed',

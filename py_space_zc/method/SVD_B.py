@@ -3,7 +3,7 @@ from pyrfu import pyrf
 from py_space_zc import background_B, plot, ts_vec_xyz
 
 def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
-          m_width_coeff=2):
+          m_width_coeff=2, nav=12, planarity_min=None):
     """
     Perform Singular Value Decomposition (SVD)-based polarization analysis of
     magnetic field fluctuations using the `pyrfu.ebsp` routine.
@@ -33,6 +33,14 @@ def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
         used by `ebsp`, approximately 12 * m_width_coeff bins per decade.
         Larger values improve frequency resolution and can help separate
         harmonics, but reduce time resolution and increase computation time.
+    nav : int or float, optional (default=8)
+        Number of wave periods used by `pyrfu.ebsp` when averaging the
+        spectral matrix before SVD. Larger values usually give smoother and
+        more stable polarization parameters, but reduce time resolution.
+    planarity_min : float or None, optional (default=None)
+        If given, mask SVD products where planarity is lower than this
+        threshold. The returned `planarity` field is kept unmasked as a
+        quality diagnostic.
 
     Returns
     -------
@@ -82,7 +90,8 @@ def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
     polarization_options = dict(freq_int=freq_range,
                                 polarization=True,
                                 fac=True,
-                                m_width_coeff = m_width_coeff)
+                                m_width_coeff=m_width_coeff,
+                                nav=nav)
     polarization = pyrf.ebsp(e_xyz, Bwave, Bbgd, Bbgd, r_xyz, **polarization_options)
 
     # Extract results from output dictionary
@@ -92,6 +101,14 @@ def SVD_B(Bwave, window_length=20.0, overlap=10.0, freq_range=[0.1, 16.0],
     thetak = polarization["k_tp"][..., 0]            # angle between k and B0
     planarity = polarization["planarity"]
     thetak_deg = thetak.copy(data=thetak.data * 180.0 / np.pi)
+
+    if planarity_min is not None:
+        high_planarity = planarity >= planarity_min
+        Bperp_psd = Bperp_psd.where(high_planarity)
+        Bpara_psd = Bpara_psd.where(high_planarity)
+        ellipticity = ellipticity.where(high_planarity)
+        thetak_deg = thetak_deg.where(high_planarity)
+
     # Package into result dictionary
     res = {
         'Bperp': Bperp_psd,

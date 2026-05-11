@@ -223,7 +223,7 @@ def _plot_trajectory(ax_left, tint):
             cmap="Spectral_r", size=5.0, min_nticks=3)
         maven.bs_mpb(ax_left[0])
         plot.set_axis(
-            ax_left[0], xlim=(-4.0, 2.0), ylim=(0.0, 5.5),
+            ax_left[0], xlim=(-4.0, 4.0), ylim=(0.0, 7.0),
             tick_fontsize=12, label_fontsize=14,
             xlabel=r"$X_{\mathrm{MSO}}\ (R_{\rm M})$",
             ylabel=r"$\sqrt{Y_{\mathrm{MSO}}^2 + Z_{\mathrm{MSO}}^2}$ (R$_\mathrm{M}$)",

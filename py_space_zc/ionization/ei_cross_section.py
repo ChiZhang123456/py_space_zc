@@ -26,29 +26,22 @@ def read_txt_data(filename, from_x1e16=True):
           'others': np.ndarray or None (cm^2)
         }
     """
+    rows = []
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
-        lines = [ln.strip() for ln in f if ln.strip() != '']
-    if not lines:
-        raise ValueError(f"Empty file: {filename}")
-    first = lines[0]
-    has_header = any(c.isalpha() for c in first)
+        for ln in f:
+            stripped = ln.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            parts = stripped.split(',') if ',' in stripped else stripped.split()
+            try:
+                rows.append([float(part) for part in parts])
+            except ValueError:
+                continue
 
-    data_line = None
-    for ln in lines:
-        if any(ch.isdigit() for ch in ln):
-            data_line = ln
-            break
-    if data_line is None:
+    if not rows:
         raise ValueError(f"No numeric data lines found in: {filename}")
 
-    delimiter = ',' if (',' in data_line) else None
-
-    skiprows = 1 if has_header else 0
-    arr = np.loadtxt(filename, delimiter=delimiter, ndmin=2, skiprows=skiprows)
-
-
-    if arr.ndim != 2:
-        arr = np.atleast_2d(arr)
+    arr = np.asarray(rows, dtype=float)
 
     ncols = arr.shape[1]
     if ncols == 2:
@@ -89,8 +82,9 @@ def ei_cross_section(energy, species):
     energy : float or np.ndarray
         Energy value(s) (in eV) at which to evaluate the interpolated cross section.
     species : str
-        Atomic or molecular species (e.g., 'H', 'O2', 'CO2', case-insensitive).
-        Both neutrals and ions are supported (e.g., 'O' and 'O+').
+        Atomic or molecular species (e.g., 'H', 'O2', 'CO2', 'Mg',
+        case-insensitive). Both neutrals and ions are supported (e.g., 'O'
+        and 'O+').
 
     Returns
     -------
@@ -101,8 +95,12 @@ def ei_cross_section(energy, species):
     Notes
     -----
     - Required .txt files must be located in the current working directory.
-    - File naming convention: e.g., 'CO2_EI.txt', 'O_EI.txt', etc.
+    - File naming convention: e.g., 'electron_impact_CO2.txt',
+      'electron_impact_O.txt', etc.
     - Each file should contain two comma-separated columns: energy, cross section.
+    - Metallic species Na, Mg, Al, Si, K, Ca, Ti, and Fe are digitized from
+      Lin and Poppe (2025), Fig. 2b, which cites Bartlett and Stelbovics
+      (2002, 2004) as the original electron-impact source.
     """
     # Map species name to corresponding file
     species_map = {
@@ -122,6 +120,22 @@ def ei_cross_section(energy, species):
         'co2+': 'electron_impact_CO2.txt',
         'ar': 'electron_impact_Ar.txt',
         'ar+': 'electron_impact_Ar.txt',
+        'na': 'electron_impact_Na.txt',
+        'na+': 'electron_impact_Na.txt',
+        'mg': 'electron_impact_Mg.txt',
+        'mg+': 'electron_impact_Mg.txt',
+        'al': 'electron_impact_Al.txt',
+        'al+': 'electron_impact_Al.txt',
+        'si': 'electron_impact_Si.txt',
+        'si+': 'electron_impact_Si.txt',
+        'k': 'electron_impact_K.txt',
+        'k+': 'electron_impact_K.txt',
+        'ca': 'electron_impact_Ca.txt',
+        'ca+': 'electron_impact_Ca.txt',
+        'ti': 'electron_impact_Ti.txt',
+        'ti+': 'electron_impact_Ti.txt',
+        'fe': 'electron_impact_Fe.txt',
+        'fe+': 'electron_impact_Fe.txt',
     }
 
     species_key = species.lower().strip()

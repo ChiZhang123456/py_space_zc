@@ -1,5 +1,38 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+
+
+def _read_x1e16_table(filename):
+    rows = []
+    with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
+        for ln in f:
+            stripped = ln.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            parts = stripped.split(',') if ',' in stripped else stripped.split()
+            try:
+                rows.append([float(part) for part in parts[:2]])
+            except ValueError:
+                continue
+    if not rows:
+        raise ValueError(f"No numeric data lines found in: {filename}")
+
+    data = np.asarray(rows, dtype=float)
+    order = np.argsort(data[:, 0])
+    return data[order, 0], data[order, 1] * 1e-16
+
+
+def _table_cex_cross_section(energy_eV, table_name):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    filename = os.path.join(script_dir, table_name)
+    energy_table, sigma_table = _read_x1e16_table(filename)
+
+    E = np.asarray(energy_eV, dtype=float)
+    sigma = np.interp(E, energy_table, sigma_table, left=np.nan, right=np.nan)
+    if np.isscalar(energy_eV):
+        return float(np.asarray(sigma))
+    return sigma
 
 def cex_cross_section(energy_eV, ion = 'H+', neutral = 'H'):
     """
@@ -28,6 +61,11 @@ def cex_cross_section(energy_eV, ion = 'H+', neutral = 'H'):
       - O+ + O   -> O+ + O   (OpO>OpO)
       - H+ + N2  -> N2+ + H  (HpN2>N2PH)
       - H+ + O2  -> O2+ + H  (HpO2>O2PH)
+      - H+ + Na/Mg/K/Ca -> metal+ + H, digitized from Lin and Poppe
+        (2025), Fig. 2c.
+      - H+ + Al/Si/Ti uses the "Others" average curve from Lin and Poppe
+        (2025), Fig. 2c, following their treatment for metals without
+        species-specific charge-exchange data.
 
     Formulae follow the MATLAB reference you provided:
     Lindsay & Stebbings (2005), https://doi.org/10.1029/2005JA011298
@@ -35,6 +73,22 @@ def cex_cross_section(energy_eV, ion = 'H+', neutral = 'H'):
     # normalize species strings
     ion = ion.strip().lower().replace(' ', '')
     neutral = neutral.strip().lower().replace(' ', '')
+
+    if ion == 'h+':
+        metal_table_map = {
+            'na': 'charge_exchange_Hp_Na.txt',
+            'mg': 'charge_exchange_Hp_Mg.txt',
+            'k': 'charge_exchange_Hp_K.txt',
+            'ca': 'charge_exchange_Hp_Ca.txt',
+            'al': 'charge_exchange_Hp_Others.txt',
+            'si': 'charge_exchange_Hp_Others.txt',
+            'ti': 'charge_exchange_Hp_Others.txt',
+            'others': 'charge_exchange_Hp_Others.txt',
+            'other': 'charge_exchange_Hp_Others.txt',
+        }
+        table_name = metal_table_map.get(neutral)
+        if table_name is not None:
+            return _table_cex_cross_section(energy_eV, table_name)
 
     # map to a reaction key
     if ion == 'h+' and neutral == 'o':

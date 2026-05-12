@@ -11,13 +11,14 @@ and was modified for compatibility with py_space_zc.
 import numpy as np
 import xarray as xr
 from scipy import constants
+from ._flux_convert_utils import broadcast_energy_to_data
 
 def _mass_ratio(inp):
     if inp.attrs["species"].lower() in ["ions", "ion", "protons", "proton","h","h+"]:
         mass_ratio = 1
     elif inp.attrs["species"].lower() in ["alphas", "alpha", "helium", "he","he+"]:
         mass_ratio = 4
-    elif inp.attrs["species"].lower() in ["electrons", "e"]:
+    elif inp.attrs["species"].lower() in ["electrons", "electron", "e", "e-"]:
         mass_ratio = constants.electron_mass / constants.proton_mass
     elif inp.attrs["species"].lower() in ["o", "o+"]:
         mass_ratio = 16
@@ -76,7 +77,7 @@ def psd2dpf(inp):
     if isinstance(inp, xr.Dataset):
         tmp_data = _convert(inp.data.data, inp.data.attrs["UNITS"], _mass_ratio(inp))
         energy = inp.energy.data
-        energy_mat = np.tile(energy[:, :, None, None], (1, 1, *tmp_data.shape[2:]))
+        energy_mat = broadcast_energy_to_data(energy, tmp_data, getattr(inp.data, "dims", None))
         tmp_data *= energy_mat
         out = inp.copy()
         out.data.data = np.squeeze(tmp_data) * 1e3
@@ -84,10 +85,7 @@ def psd2dpf(inp):
     else:
         tmp_data = _convert(inp.data, inp.attrs["UNITS"], _mass_ratio(inp))
         energy = inp.energy.data
-        if energy.ndim == 1:
-            energy_mat = np.tile(energy, (tmp_data.shape[0], 1))
-        elif energy.ndim == 2:
-            energy_mat = energy.copy()
+        energy_mat = broadcast_energy_to_data(energy, tmp_data, getattr(inp, "dims", None))
         tmp_data *= energy_mat
         out = inp.copy()
         out.data = np.squeeze(tmp_data) * 1e3

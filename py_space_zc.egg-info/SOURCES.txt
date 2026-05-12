@@ -22,6 +22,7 @@ py_space_zc/get_filelist.py
 py_space_zc/gyro_information.py
 py_space_zc/hybrid_alfven_speed.py
 py_space_zc/irf_time.py
+py_space_zc/kappa.py
 py_space_zc/lmn.py
 py_space_zc/loadmat.py
 py_space_zc/lonlat_2_xyz.py
@@ -184,6 +185,7 @@ py_space_zc/method/autocorr.py
 py_space_zc/method/beta_anisotropy_instability.py
 py_space_zc/method/current_sheet_fit.py
 py_space_zc/method/fac.py
+py_space_zc/method/fermi_betatron.py
 py_space_zc/method/hilbert_envelope.py
 py_space_zc/method/icw_detection.py
 py_space_zc/method/mva.py
@@ -206,6 +208,7 @@ py_space_zc/plot/fonts.py
 py_space_zc/plot/hist1d.py
 py_space_zc/plot/hist2d.py
 py_space_zc/plot/plot_clock_angle.py
+py_space_zc/plot/plot_energy_pad_dot.py
 py_space_zc/plot/plot_line.py
 py_space_zc/plot/plot_pcolor.py
 py_space_zc/plot/plot_pcolor_quiver.py
@@ -239,6 +242,7 @@ py_space_zc/tianwen_1/read_mag_dat.py
 py_space_zc/tianwen_1/show_maven_tianwen_data.py
 py_space_zc/vdf/Monte_Carlo_vdf.py
 py_space_zc/vdf/__init__.py
+py_space_zc/vdf/_flux_convert_utils.py
 py_space_zc/vdf/convert_energy_velocity.py
 py_space_zc/vdf/create_pdist_skymap.py
 py_space_zc/vdf/def2psd.py
@@ -251,6 +255,7 @@ py_space_zc/vdf/fit_omni_1d.py
 py_space_zc/vdf/flux_convert.py
 py_space_zc/vdf/generate_maxwellian_3d.py
 py_space_zc/vdf/get_particle_mass_charge.py
+py_space_zc/vdf/gyrophase_pitchangle_dis.py
 py_space_zc/vdf/int_sph_dist.py
 py_space_zc/vdf/kappa_distribution.py
 py_space_zc/vdf/match_vdf_dims.py

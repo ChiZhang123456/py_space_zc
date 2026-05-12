@@ -69,10 +69,16 @@ from .xyz_2_lonlat import xyz_2_lonlat
 from .lonlat_2_xyz import lonlat_2_xyz
 from .filt import filt
 from .hybrid_alfven_speed import hybrid_alfven_speed
+from .method.fermi_betatron import (
+    def_to_psd_shape,
+    fermi_betatron_error_map,
+    fermi_betatron_map,
+    fit_fermi_betatron,
+)
 # -----------------------------------------------------------------------------
 # Submodules
 # -----------------------------------------------------------------------------
-from . import maven, emm, vdf, mercury, ionization, tianwen_1, plot, method, jupiter, sputtering, vex
+from . import maven, emm, vdf, mercury, ionization, tianwen_1, plot, method, jupiter, sputtering, vex, kappa
 
 # -----------------------------------------------------------------------------
 # Metadata
@@ -116,11 +122,13 @@ __all__ = [
 
     # Physics methods
     "pad_split_energy", "KH_condition", "plot_Bwave_svd", "plot_Bwave_SVD",
+    "def_to_psd_shape", "fermi_betatron_error_map",
+    "fermi_betatron_map", "fit_fermi_betatron",
 
     'pressure', 'gyro_information', 'rotate_tensor', "xyz_2_lonlat","lonlat_2_xyz",
     'hybrid_alfven_speed',
 
     # Submodules
     "maven", "emm", "vdf", "mercury", "ionization",
-    "tianwen_1", "plot", "method", "jupiter", "sputtering", "vex",
+    "tianwen_1", "plot", "method", "jupiter", "sputtering", "vex", "kappa",
 ]

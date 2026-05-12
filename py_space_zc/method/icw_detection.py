@@ -1,12 +1,12 @@
-"""PCW detection with MAVEN magnetic-field SVD products.
+"""PCW detection with MAVEN magnetic-field Welch PSD and SVD products.
 
 This module keeps only the current H+ PCW workflow:
 
 1. run ``SVD_B`` once on the full input ``Bwave`` interval,
 2. compute local ``B0`` windows with ``background_B`` using the same
    window length and overlap,
-3. evaluate the PSD, theta_kB, ellipticity, and duration criteria for each
-   local B0 window,
+3. evaluate the Welch PSD criteria and SVD theta_kB and ellipticity criteria
+   for each local B0 window,
 4. optionally plot the diagnostic products.
 """
 
@@ -117,41 +117,134 @@ def _time_band_nanmean(values: np.ndarray, freq: np.ndarray, f_low: float, f_hig
     return out
 
 
-def _longest_true_duration_s(mask: np.ndarray, time: np.ndarray) -> float:
-    mask = np.asarray(mask, dtype=bool)
-    if mask.size == 0 or not np.any(mask):
-        return 0.0
+def _sampling_rate_hz(time: np.ndarray) -> float:
     time = np.asarray(time).astype("datetime64[ns]")
     if time.size < 2:
-        return 0.0
+        return np.nan
     dt_s = np.nanmedian(np.diff(time).astype("timedelta64[ns]").astype(float)) * 1.0e-9
-    if not np.isfinite(dt_s) or dt_s <= 0:
-        return 0.0
-    best = 0
-    current = 0
-    for item in mask:
-        if item:
-            current += 1
-            best = max(best, current)
-        else:
-            current = 0
-    return float(best * dt_s)
+    return float(1.0 / dt_s) if np.isfinite(dt_s) and dt_s > 0 else np.nan
+
+
+def _mfa_basis(b0_vec_nt: np.ndarray) -> np.ndarray:
+    b0 = np.asarray(b0_vec_nt, dtype=float)
+    bnorm = np.linalg.norm(b0)
+    if b0.size != 3 or not np.isfinite(bnorm) or bnorm <= 0:
+        raise ValueError("bad B0 vector")
+    epar = b0 / bnorm
+    ref = np.array([1.0, 0.0, 0.0])
+    if np.linalg.norm(np.cross(epar, ref)) < 1e-8:
+        ref = np.array([0.0, 1.0, 0.0])
+    eperp2 = np.cross(epar, ref)
+    eperp2 = eperp2 / np.linalg.norm(eperp2)
+    eperp1 = np.cross(eperp2, epar)
+    eperp1 = eperp1 / np.linalg.norm(eperp1)
+    return np.vstack((eperp1, eperp2, epar))
+
+
+def _welch_band_psd_for_window(
+    time: np.ndarray,
+    b_xyz_nt: np.ndarray,
+    start: Any,
+    stop: Any,
+    b0_vec_nt: np.ndarray,
+    fci_hz: float,
+) -> dict[str, Any]:
+    try:
+        from scipy.signal import welch
+    except ImportError as exc:
+        raise ImportError("scipy is required for Welch PSD PCW criteria") from exc
+
+    start = np.datetime64(start)
+    stop = np.datetime64(stop)
+    mask = (time >= start) & (time < stop)
+    if np.count_nonzero(mask) < 16 or not np.isfinite(fci_hz) or fci_hz <= 0:
+        return _empty_welch_result()
+
+    fs = _sampling_rate_hz(time[mask])
+    if not np.isfinite(fs) or fs <= 0:
+        return _empty_welch_result()
+
+    bseg = np.asarray(b_xyz_nt[mask], dtype=float)
+    good = np.all(np.isfinite(bseg), axis=1)
+    if np.count_nonzero(good) < 16:
+        return _empty_welch_result()
+    bseg = bseg[good]
+    bseg = bseg - np.nanmean(bseg, axis=0, keepdims=True)
+    b_mfa = bseg @ _mfa_basis(b0_vec_nt).T
+
+    # Use a long segment so low H+ gyrofrequencies are resolved in 5 minute windows.
+    target_df = max(0.1 * fci_hz, 1.0 / max(float(np.count_nonzero(good)) / fs, 1.0))
+    nperseg = int(np.clip(np.ceil(fs / target_df), 16, b_mfa.shape[0]))
+    noverlap = nperseg // 2 if nperseg < b_mfa.shape[0] else 0
+    freq, p1 = welch(b_mfa[:, 0], fs=fs, window="hann", nperseg=nperseg, noverlap=noverlap, detrend="constant")
+    _, p2 = welch(b_mfa[:, 1], fs=fs, window="hann", nperseg=nperseg, noverlap=noverlap, detrend="constant")
+    _, ppar = welch(b_mfa[:, 2], fs=fs, window="hann", nperseg=nperseg, noverlap=noverlap, detrend="constant")
+    pperp = p1 + p2
+
+    low1, high1 = 0.6 * fci_hz, 0.8 * fci_hz
+    low_main, high_main = 0.8 * fci_hz, 1.2 * fci_hz
+    low2, high2 = 1.2 * fci_hz, 1.4 * fci_hz
+    psd_low = _band_nanmean(pperp, freq, low1, high1)
+    psd_main = _band_nanmean(pperp, freq, low_main, high_main)
+    psd_high = _band_nanmean(pperp, freq, low2, high2)
+    psd_para = _band_nanmean(ppar, freq, low_main, high_main)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        low_ratio = psd_main / psd_low
+        high_ratio = psd_main / psd_high
+        para_ratio = psd_main / psd_para
+
+    return {
+        "freq": freq,
+        "p_perp": pperp,
+        "p_para": ppar,
+        "nperseg": int(nperseg),
+        "df_hz": float(freq[1] - freq[0]) if freq.size > 1 else np.nan,
+        "psd_bperp_low": psd_low,
+        "psd_bperp_main": psd_main,
+        "psd_bperp_high": psd_high,
+        "psd_bpara_main": psd_para,
+        "low_ratio": low_ratio,
+        "high_ratio": high_ratio,
+        "para_ratio": para_ratio,
+    }
+
+
+def _empty_welch_result() -> dict[str, Any]:
+    return {
+        "freq": np.asarray([], dtype=float),
+        "p_perp": np.asarray([], dtype=float),
+        "p_para": np.asarray([], dtype=float),
+        "nperseg": 0,
+        "df_hz": np.nan,
+        "psd_bperp_low": np.nan,
+        "psd_bperp_main": np.nan,
+        "psd_bperp_high": np.nan,
+        "psd_bpara_main": np.nan,
+        "low_ratio": np.nan,
+        "high_ratio": np.nan,
+        "para_ratio": np.nan,
+    }
 
 
 def evaluate_pcw_svd_psd_criteria_window(
     wave_res: dict[str, Any],
+    Bwave: Any,
     start: Any,
     stop: Any,
     b0_vec_nt: np.ndarray,
     ion: str | tuple[float, float] = "H+",
     *,
-    min_duration_gyroperiods: float = 3.0,
     sideband_ratio_min: float = 1.2,
     perp_para_ratio_min: float = 2.0,
     theta_kb_max_deg: float = 45.0,
     ellipticity_max: float = -0.6,
 ) -> dict[str, Any]:
-    """Evaluate the PCW criteria for one local B0 window using precomputed SVD_B output."""
+    """Evaluate one local B0 window using Welch PSD and precomputed SVD_B polarization.
+
+    Welch PSD is used for the three spectral conditions: main band over low
+    sideband, main band over high sideband, and perpendicular over parallel
+    power. SVD_B is used for theta_kB and ellipticity at the local fci band.
+    """
     start = np.datetime64(start)
     stop = np.datetime64(stop)
     b0_vec = np.asarray(b0_vec_nt, dtype=float)
@@ -170,46 +263,22 @@ def evaluate_pcw_svd_psd_criteria_window(
     bpara = np.asarray(wave_res["Bpara"].values, dtype=float)[smask]
     theta = np.asarray(wave_res["theta"].values, dtype=float)[smask]
     ellipticity = np.asarray(wave_res["ellipticity"].values, dtype=float)[smask]
-    local_time = svd_time[smask]
 
-    low1, high1 = 0.6 * fci_hz, 0.8 * fci_hz
     low_main, high_main = 0.8 * fci_hz, 1.2 * fci_hz
-    low2, high2 = 1.2 * fci_hz, 1.4 * fci_hz
 
-    psd_bperp_low = _band_nanmean(bperp, freq, low1, high1)
-    psd_bperp_main = _band_nanmean(bperp, freq, low_main, high_main)
-    psd_bperp_high = _band_nanmean(bperp, freq, low2, high2)
-    psd_bpara_main = _band_nanmean(bpara, freq, low_main, high_main)
+    bwave_time, bwave_data = _extract_bwave_arrays(Bwave)
+    welch_psd = _welch_band_psd_for_window(bwave_time, bwave_data, start, stop, b0_vec, fci_hz)
+    psd_bperp_low = welch_psd["psd_bperp_low"]
+    psd_bperp_main = welch_psd["psd_bperp_main"]
+    psd_bperp_high = welch_psd["psd_bperp_high"]
+    psd_bpara_main = welch_psd["psd_bpara_main"]
     theta_main = _band_nanmean(theta, freq, low_main, high_main)
     ellipticity_main = _band_nanmean(ellipticity, freq, low_main, high_main)
 
-    bperp_low_t = _time_band_nanmean(bperp, freq, low1, high1)
-    bperp_main_t = _time_band_nanmean(bperp, freq, low_main, high_main)
-    bperp_high_t = _time_band_nanmean(bperp, freq, low2, high2)
-    bpara_main_t = _time_band_nanmean(bpara, freq, low_main, high_main)
-    theta_t = _time_band_nanmean(theta, freq, low_main, high_main)
-    ell_t = _time_band_nanmean(ellipticity, freq, low_main, high_main)
-
     with np.errstate(divide="ignore", invalid="ignore"):
-        low_ratio = psd_bperp_main / psd_bperp_low
-        high_ratio = psd_bperp_main / psd_bperp_high
-        para_ratio = psd_bperp_main / psd_bpara_main
-        low_ratio_t = bperp_main_t / bperp_low_t
-        high_ratio_t = bperp_main_t / bperp_high_t
-        para_ratio_t = bperp_main_t / bpara_main_t
-
-    good_t = (
-        np.isfinite(low_ratio_t)
-        & np.isfinite(high_ratio_t)
-        & np.isfinite(para_ratio_t)
-        & (low_ratio_t >= sideband_ratio_min)
-        & (high_ratio_t >= sideband_ratio_min)
-        & (para_ratio_t >= perp_para_ratio_min)
-        & (theta_t <= theta_kb_max_deg)
-        & (ell_t < ellipticity_max)
-    )
-    continuous_duration_s = _longest_true_duration_s(good_t, local_time)
-    required_duration_s = float(min_duration_gyroperiods * tci_s) if np.isfinite(tci_s) else np.inf
+        low_ratio = welch_psd["low_ratio"]
+        high_ratio = welch_psd["high_ratio"]
+        para_ratio = welch_psd["para_ratio"]
 
     psd_ok = bool(
         np.isfinite(low_ratio)
@@ -221,8 +290,7 @@ def evaluate_pcw_svd_psd_criteria_window(
     )
     theta_ok = bool(np.isfinite(theta_main) and theta_main <= theta_kb_max_deg)
     ellipticity_ok = bool(np.isfinite(ellipticity_main) and ellipticity_main < ellipticity_max)
-    duration_ok = bool(continuous_duration_s >= required_duration_s)
-    is_icw = bool(psd_ok and theta_ok and ellipticity_ok and duration_ok)
+    is_icw = bool(psd_ok and theta_ok and ellipticity_ok)
 
     return {
         "is_icw": is_icw,
@@ -241,17 +309,17 @@ def evaluate_pcw_svd_psd_criteria_window(
         "psd_bperp_0p8_1p2_fci": float(psd_bperp_main) if np.isfinite(psd_bperp_main) else np.nan,
         "psd_bperp_1p2_1p4_fci": float(psd_bperp_high) if np.isfinite(psd_bperp_high) else np.nan,
         "psd_bpara_0p8_1p2_fci": float(psd_bpara_main) if np.isfinite(psd_bpara_main) else np.nan,
+        "psd_source": "welch",
+        "welch_nperseg": int(welch_psd["nperseg"]),
+        "welch_df_hz": float(welch_psd["df_hz"]) if np.isfinite(welch_psd["df_hz"]) else np.nan,
         "perp_main_over_low_ratio": float(low_ratio) if np.isfinite(low_ratio) else np.nan,
         "perp_main_over_high_ratio": float(high_ratio) if np.isfinite(high_ratio) else np.nan,
         "perp_over_para_main_ratio": float(para_ratio) if np.isfinite(para_ratio) else np.nan,
-        "continuous_duration_s": continuous_duration_s,
-        "required_duration_s": required_duration_s,
-        "good_svd_samples": int(np.count_nonzero(good_t)),
         "svd_sample_count": int(np.count_nonzero(smask)),
         "psd_ok": psd_ok,
         "theta_ok": theta_ok,
         "ellipticity_ok": ellipticity_ok,
-        "duration_ok": duration_ok,
+        "detection_logic": "welch_psd_and_svd_theta_ellipticity",
     }
 
 
@@ -274,9 +342,8 @@ def detect_pcw_svd_psd_criteria(
     svd_window_length: float = 300.0,
     svd_overlap: float = 150.0,
     freq_range: tuple[float, float] | list[float] | None = None,
-    m_width_coeff: float = 1,
+    m_width_coeff: float = 4,
     nav: int = 12,
-    min_duration_gyroperiods: float = 3.0,
     sideband_ratio_min: float = 1.2,
     perp_para_ratio_min: float = 2.0,
     theta_kb_max_deg: float = 45.0,
@@ -285,7 +352,7 @@ def detect_pcw_svd_psd_criteria(
     plot: bool = False,
     plot_freq_range: tuple[float, float] = (0.01, 11.0),
 ) -> dict[str, Any]:
-    """Run SVD_B on the full Bwave interval and return PCW criteria time series."""
+    """Run Welch PSD plus SVD_B detection and return PCW criteria time series."""
     time, b_xyz_nt = _extract_bwave_arrays(Bwave)
     if time.size < 2:
         return {"is_icw": np.asarray([], dtype=bool), "reason": "too_few_samples"}
@@ -336,11 +403,11 @@ def detect_pcw_svd_psd_criteria(
     for center, b0_vec in zip(b0_time, np.asarray(B0_all.data, dtype=float)):
         row = evaluate_pcw_svd_psd_criteria_window(
             wave_res,
+            clean_bwave,
             np.datetime64(center) - half_width,
             np.datetime64(center) + half_width,
             b0_vec,
             ion=ion,
-            min_duration_gyroperiods=min_duration_gyroperiods,
             sideband_ratio_min=sideband_ratio_min,
             perp_para_ratio_min=perp_para_ratio_min,
             theta_kb_max_deg=theta_kb_max_deg,
@@ -379,12 +446,9 @@ def detect_pcw_svd_psd_criteria(
         "perp_main_over_low_ratio": ts_scalar(out_time, arr("perp_main_over_low_ratio")),
         "perp_main_over_high_ratio": ts_scalar(out_time, arr("perp_main_over_high_ratio")),
         "perp_over_para_main_ratio": ts_scalar(out_time, arr("perp_over_para_main_ratio")),
-        "continuous_duration_s": ts_scalar(out_time, arr("continuous_duration_s"), attrs={"UNITS": "s"}),
-        "required_duration_s": ts_scalar(out_time, arr("required_duration_s"), attrs={"UNITS": "s"}),
         "psd_ok": ts_scalar(out_time, arr("psd_ok", dtype=bool).astype(float)),
         "theta_ok": ts_scalar(out_time, arr("theta_ok", dtype=bool).astype(float)),
         "ellipticity_ok": ts_scalar(out_time, arr("ellipticity_ok", dtype=bool).astype(float)),
-        "duration_ok": ts_scalar(out_time, arr("duration_ok", dtype=bool).astype(float)),
         "rows": rows,
         "time": out_time,
         "freqs_hz": np.asarray(wave_res["Bperp"].coords["frequency"].data, dtype=float),
@@ -399,7 +463,7 @@ def detect_pcw_svd_psd_criteria(
             "psd_perp_over_para_min": perp_para_ratio_min,
             "theta_kb_max_deg": theta_kb_max_deg,
             "ellipticity_max": ellipticity_max,
-            "min_duration_gyroperiods": min_duration_gyroperiods,
+            "detection_logic": "welch_psd_and_svd_theta_ellipticity",
         },
     }
     if plot:
@@ -414,7 +478,7 @@ def plot_pcw_svd_psd_criteria(
     tint_focus: tuple[str, str] | list[str] | tuple[np.datetime64, np.datetime64] | None = None,
     freq_range: tuple[float, float] = (0.01, 11.0),
 ) -> Any:
-    """Plot B, SVD PSD, theta_kB, ellipticity, and PCW flag."""
+    """Plot B, SVD products, Welch PSD ratios, and the final PCW flag."""
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
@@ -424,13 +488,17 @@ def plot_pcw_svd_psd_criteria(
         focus_start, focus_stop = b_time[0], b_time[-1]
     else:
         focus_start, focus_stop = np.datetime64(tint_focus[0]), np.datetime64(tint_focus[1])
-    bmask = (b_time >= focus_start) & (b_time <= focus_stop)
     svd_time = np.asarray(result["wave_res"]["Bperp"].time.data)
+    available_start = max(np.datetime64(focus_start), np.datetime64(b_time[0]), np.datetime64(svd_time[0]))
+    available_stop = min(np.datetime64(focus_stop), np.datetime64(b_time[-1]), np.datetime64(svd_time[-1]))
+    if available_start < available_stop:
+        focus_start, focus_stop = available_start, available_stop
+    bmask = (b_time >= focus_start) & (b_time <= focus_stop)
     smask = (svd_time >= focus_start) & (svd_time <= focus_stop)
     freq = np.asarray(result["wave_res"]["Bperp"].coords["frequency"].data, dtype=float)
     tnum = mdates.date2num(svd_time[smask].astype("datetime64[ms]").astype(object))
 
-    fig, axes = plt.subplots(6, 1, figsize=(13, 11), sharex=True, constrained_layout=True)
+    fig, axes = plt.subplots(7, 1, figsize=(13, 12.5), sharex=True, constrained_layout=True)
     axes[0].plot(b_time[bmask].astype("datetime64[ms]").astype(object), b_data[bmask, 0], lw=0.7, color="tab:red", label="Bx")
     axes[0].plot(b_time[bmask].astype("datetime64[ms]").astype(object), b_data[bmask, 1], lw=0.7, color="tab:green", label="By")
     axes[0].plot(b_time[bmask].astype("datetime64[ms]").astype(object), b_data[bmask, 2], lw=0.7, color="tab:blue", label="Bz")
@@ -464,19 +532,33 @@ def plot_pcw_svd_psd_criteria(
     fci = np.asarray(result["fci_hz"].data, dtype=float)
     blow = np.asarray([row.get("band_low_hz", np.nan) for row in result["rows"]], dtype=float)
     bhigh = np.asarray([row.get("band_high_hz", np.nan) for row in result["rows"]], dtype=float)
+    main_low_ratio = np.asarray([row.get("perp_main_over_low_ratio", np.nan) for row in result["rows"]], dtype=float)
+    main_high_ratio = np.asarray([row.get("perp_main_over_high_ratio", np.nan) for row in result["rows"]], dtype=float)
+    perp_para_ratio = np.asarray([row.get("perp_over_para_main_ratio", np.nan) for row in result["rows"]], dtype=float)
     for ax in axes[1:5]:
         ax.plot(centers_obj, fci, color="black", lw=2.0, label="fci")
         ax.plot(centers_obj, blow, color="black", lw=1.2, ls="--", label="0.8, 1.2 fci")
         ax.plot(centers_obj, bhigh, color="black", lw=1.2, ls="--")
     axes[1].legend(loc="upper right", fontsize=8)
 
-    axes[5].step(centers_obj, result["is_icw"].astype(float), where="mid", color="tab:red", lw=2.4)
-    axes[5].set_ylabel("is PCW")
-    axes[5].set_ylim(-0.1, 1.15)
-    axes[5].set_yticks([0, 1])
-    axes[5].grid(True, ls=":", alpha=0.35)
-    axes[5].set_xlabel("Time")
-    axes[5].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+    axes[5].plot(centers_obj, main_low_ratio, marker="o", ms=3.0, lw=1.1, label="main / low")
+    axes[5].plot(centers_obj, main_high_ratio, marker="o", ms=3.0, lw=1.1, label="main / high")
+    axes[5].plot(centers_obj, perp_para_ratio, marker="o", ms=3.0, lw=1.1, label="perp / para")
+    axes[5].axhline(result["criteria"]["psd_main_over_low_min"], color="0.4", ls="--", lw=1.0, label="sideband limit")
+    axes[5].axhline(result["criteria"]["psd_perp_over_para_min"], color="0.2", ls=":", lw=1.0, label="perp/para limit")
+    axes[5].set_yscale("log")
+    axes[5].set_ylabel("Welch PSD\nratios")
+    axes[5].grid(True, which="both", ls=":", alpha=0.35)
+    axes[5].legend(loc="upper right", ncol=3, fontsize=8)
+
+    axes[6].step(centers_obj, result["is_icw"].astype(float), where="mid", color="tab:red", lw=2.4, label="is_icw")
+    axes[6].set_ylabel("is_icw")
+    axes[6].set_ylim(-0.1, 1.15)
+    axes[6].set_yticks([0, 1])
+    axes[6].grid(True, ls=":", alpha=0.35)
+    axes[6].legend(loc="upper right", fontsize=8)
+    axes[6].set_xlabel("Time")
+    axes[6].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
     for ax in axes:
         ax.set_xlim(focus_start.astype("datetime64[ms]").astype(object), focus_stop.astype("datetime64[ms]").astype(object))
     axes[0].set_title(

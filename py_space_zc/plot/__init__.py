@@ -33,6 +33,7 @@ from .hist1d import hist1d
 from .bar1d import bar1d
 from .connect_axes import connect_axes
 from .fonts import apply_plot_font, configure_plot_font, get_plot_font
+from .plot_energy_pad_dot import plot_energy_pad_dot
 
 configure_plot_font()
 
@@ -64,4 +65,5 @@ __all__ = [
     "apply_plot_font",
     "configure_plot_font",
     "get_plot_font",
+    "plot_energy_pad_dot",
 ]

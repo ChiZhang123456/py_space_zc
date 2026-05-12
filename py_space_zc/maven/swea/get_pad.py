@@ -35,20 +35,26 @@ def get_pad(tint, delta_angles=22.5):
         delta_angles=delta_angles
     )
 
+    # Sort energy from low to high and keep PAD data aligned.
+    energy = np.asarray(swea_pad['energy'])
+    energy_order = np.argsort(energy)
+    energy = energy[energy_order]
+    pad_data = pad_data[:, energy_order, :]
+
     # Organize output
     n_time = len(swea_pad['time'])
-    n_energy = len(swea_pad['energy'])
+    n_energy = len(energy)
     pad = xr.Dataset(
         {
             "data": (["time", "idx0", "idx1"], pad_data,),
-            "energy": (["time", "idx0"], np.tile(swea_pad['energy'], (n_time, 1))),
+            "energy": (["time", "idx0"], np.tile(energy, (n_time, 1))),
             "pitchangle": (["idx1"], pitchangle),
             "time": swea_pad['time'],
             "idx0": np.arange(n_energy),
             "idx1": np.arange(len(pitchangle)),
         },)
 
-    pad.attrs = {'species':'e-',
+    pad.attrs = {'species':'e',
                  "delta_pitchangle_minus": delta_angles * 0.5,
                  "delta_pitchangle_plus": delta_angles * 0.5,
                  "UNITS": 'keV/(cm^2 s sr keV)'}

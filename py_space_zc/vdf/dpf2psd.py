@@ -15,6 +15,7 @@ import numpy as np
 from scipy import constants
 from xarray.core.dataarray import DataArray
 from xarray.core.dataset import Dataset
+from ._flux_convert_utils import broadcast_energy_to_data
 
 
 def _mass_ratio(inp: Union[Dataset, DataArray]) -> float:
@@ -40,7 +41,7 @@ def _mass_ratio(inp: Union[Dataset, DataArray]) -> float:
         mass_ratio = 1
     elif inp.attrs["species"].lower() in ["alphas", "alpha", "helium", "he","he+"]:
         mass_ratio = 4
-    elif inp.attrs["species"].lower() in ["electrons", "e"]:
+    elif inp.attrs["species"].lower() in ["electrons", "electron", "e", "e-"]:
         mass_ratio = constants.electron_mass / constants.proton_mass
     elif inp.attrs["species"].lower() in ["o", "o+"]:
         mass_ratio = 16
@@ -112,7 +113,7 @@ def dpf2psd(inp: Union[Dataset, DataArray]) -> Union[Dataset, DataArray]:
     if isinstance(inp, Dataset):
         tmp_data = _convert(inp.data.data, inp.data.attrs["UNITS"], _mass_ratio(inp))
         energy = inp.energy.data
-        energy_mat = np.tile(energy[:, :, None, None], (1, 1, *tmp_data.shape[2:]))
+        energy_mat = broadcast_energy_to_data(energy, tmp_data, getattr(inp.data, "dims", None))
         tmp_data /= energy_mat
         out = inp.copy()
         out.data.data = np.squeeze(tmp_data)
@@ -120,10 +121,7 @@ def dpf2psd(inp: Union[Dataset, DataArray]) -> Union[Dataset, DataArray]:
     elif isinstance(inp, DataArray):
         tmp_data = _convert(inp.data, inp.attrs["UNITS"], _mass_ratio(inp))
         energy = inp.energy.data
-        if energy.ndim == 1:
-            energy_mat = np.tile(energy, (tmp_data.shape[0], 1))
-        elif energy.ndim == 2:
-            energy_mat = energy.copy()
+        energy_mat = broadcast_energy_to_data(energy, tmp_data, getattr(inp, "dims", None))
         tmp_data /= energy_mat
         out = inp.copy()
         out.data = np.squeeze(tmp_data)

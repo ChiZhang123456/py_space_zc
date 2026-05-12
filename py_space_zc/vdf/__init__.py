@@ -70,6 +70,8 @@ from .pitchangle_dis import pitchangle_dis
 from .pitchangle_merge_energy import pitchangle_merge_energy
 from .pitchangle_merge_pa import pitchangle_merge_pa
 from .pitchangle_dis_3d import pitchangle_dis_3d
+from .gyrophase_pitchangle_dis import gyrophase_pitchangle_dis
+from .gyrophase_pitchangle_dis import gyrophase_pitchangle_dis_3d
 from .monte_carlo_pad import par_perp_reduced_dis as par_perp_reduced_dis
 
 __all__ = [
@@ -131,5 +133,7 @@ __all__ = [
     "pitchangle_merge_energy",
     "pitchangle_merge_pa",
     "pitchangle_dis_3d",
+    "gyrophase_pitchangle_dis",
+    "gyrophase_pitchangle_dis_3d",
     "par_perp_reduced_dis",
 ]

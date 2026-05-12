@@ -29,6 +29,12 @@ from .beta_anisotropy_instability import (
     check_beta_anisotropy_instability,
 )
 from .current_sheet_fit import fit_current_sheet
+from .fermi_betatron import (
+    def_to_psd_shape,
+    fermi_betatron_error_map,
+    fermi_betatron_map,
+    fit_fermi_betatron,
+)
 
 __all__ = [
     "mva_gui",
@@ -49,4 +55,8 @@ __all__ = [
     "plot_beta_anisotropy_instability",
     "check_beta_anisotropy_instability",
     "fit_current_sheet",
+    "def_to_psd_shape",
+    "fermi_betatron_error_map",
+    "fermi_betatron_map",
+    "fit_fermi_betatron",
 ]

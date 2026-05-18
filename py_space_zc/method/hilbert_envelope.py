@@ -166,7 +166,8 @@ def _time_varying_hilbert_envelope(Bwave, f_min, f_max, order, use_fac, r_xyz, b
     return dB, env
 
 
-def hilbert_envelope(Bwave, f_min=0.0, f_max=0.0, order=4, fac=True, r_xyz=None, b_bgd=None):
+def hilbert_envelope(Bwave, f_min=0.0, f_max=0.0, order=4,
+                     fac=True, r_xyz=None, b_bgd=None):
     """
     Bandpass magnetic field data and calculate the Hilbert envelope.
 

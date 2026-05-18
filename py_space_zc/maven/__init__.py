@@ -17,7 +17,8 @@ from .db_init import db_init
 from .get_base_path import get_base_path
 from .load_maven_spice import load_maven_spice
 from .spice_init import spice_init
-from . import static, swia, swea  # ensure submodules are importable at package level
+from . import static, swia, swea, iuvs  # ensure submodules are importable at package level
+from .iuvs import read_l1c_per, plot_l1c_per, get_l1c_per, find_l1c_per_file
 from .mars_neutral_density import mars_neutral_density
 # -----------------------------------------------------------------------------
 # Data retrieval & transforms
@@ -109,6 +110,11 @@ __all__ = [
     "static",
     "swia",
     "swea",
+    "iuvs",
+    "read_l1c_per",
+    "plot_l1c_per",
+    "get_l1c_per",
+    "find_l1c_per_file",
     "mars_neutral_density",
     # data & transforms
     "get_data",

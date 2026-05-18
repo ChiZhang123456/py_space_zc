@@ -11,6 +11,8 @@ Version: 2.4.10
 
 from .ei_cross_section import ei_cross_section
 from .cex_cross_section import cex_cross_section
+from .cex_prod_rate import cex_prod_rate, charge_exchange_prod_rate
+from .ei_prod_rate import ei_prod_rate
 from .ei_rate_Te import ei_rate_Te
 from .ph_fixed_rate import CO2_hv
 from .ph_fixed_rate import CO2_hv_diss
@@ -22,7 +24,10 @@ from .ion_neutral_reaction import CO2p_O_to_Op_CO2, CO2p_e_to_CO_O, O2p_e_to_O_O
 __all__ = [
     "ei_cross_section",
     "cex_cross_section",
+    "cex_prod_rate",
+    "charge_exchange_prod_rate",
     "ei_rate_Te",
+    "ei_prod_rate",
     "CO2_hv",
     "CO2_hv_diss",
     "O_hv",

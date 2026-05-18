@@ -20,6 +20,7 @@ from .fac import fac
 from .hilbert_envelope import hilbert_envelope
 from .autocorr import autocorr
 from .icw_detection import detect_pcw_svd_psd_criteria, evaluate_pcw_svd_psd_criteria_window
+from .romeo_pcw_detection import detect_pcw_welch_mva, plot_pcw_welch_mva
 from .pui_birth_curve import (
     pui_birth_curve,
     pui_birth_curve_one_species,
@@ -50,6 +51,8 @@ __all__ = [
     "autocorr",
     "detect_pcw_svd_psd_criteria",
     "evaluate_pcw_svd_psd_criteria_window",
+    "detect_pcw_welch_mva",
+    "plot_pcw_welch_mva",
     "pui_birth_curve",
     "pui_birth_curve_one_species",
     "plot_beta_anisotropy_instability",

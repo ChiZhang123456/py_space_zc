@@ -67,6 +67,7 @@ py_space_zc/emm/show_emm_maven.py
 py_space_zc/emm/show_fuv_aurora.py
 py_space_zc/ionization/__init__.py
 py_space_zc/ionization/cex_cross_section.py
+py_space_zc/ionization/cex_prod_rate.py
 py_space_zc/ionization/charge_exchange_Hp_Ca.txt
 py_space_zc/ionization/charge_exchange_Hp_K.txt
 py_space_zc/ionization/charge_exchange_Hp_Mg.txt
@@ -146,6 +147,10 @@ py_space_zc/maven/show_overview.py
 py_space_zc/maven/show_path_xr.py
 py_space_zc/maven/spice_init.py
 py_space_zc/maven/test_maven_emm.py
+py_space_zc/maven/iuvs/__init__.py
+py_space_zc/maven/iuvs/get_l1c_per.py
+py_space_zc/maven/iuvs/plot_l1c_per.py
+py_space_zc/maven/iuvs/read_l1c_per.py
 py_space_zc/maven/static/__init__.py
 py_space_zc/maven/static/c6_densisty.py
 py_space_zc/maven/static/correct_bkg.py
@@ -191,6 +196,7 @@ py_space_zc/method/icw_detection.py
 py_space_zc/method/mva.py
 py_space_zc/method/mva_gui.py
 py_space_zc/method/pui_birth_curve.py
+py_space_zc/method/romeo_pcw_detection.py
 py_space_zc/method/shock_gui.py
 py_space_zc/method/walen_test.py
 py_space_zc/method/wavelet.py
